@@ -15,9 +15,10 @@ import pf.floors.EmptyArea;
 
 import pf.particle.PositionModel;
 import pf.particle.PositionModelUpdateListener;
-//import pf.navigation.PositionRenderer;
 import pf.particle.MotionProvider;
 import pf.particle.ProbabilityMap;
+
+//import pf.navigation.PositionRenderer;
 //import pf.service.wifi.WifiPositionUpdateListener;
 
 import pf.utils.GridPoint2D;
@@ -65,7 +66,7 @@ public class ParticlePosition implements PositionModel {
 	private double mStepLength;
 	private double mStepLengthSpread;
 	private double mHeadingSpread;
-	private boolean mCheckWallsCollisions;
+	private boolean mCheckWallsCollisions = true;
 
 	private ParticleGenerationMode mParticleGeneration = ParticleGenerationMode.GAUSSIAN;
 
@@ -84,7 +85,7 @@ public class ParticlePosition implements PositionModel {
 		while (numberOfParticles > 0) {
 			particles.add(Particle.polarNormalDistr(-30, 25, 1, 
 					HEADING_DEFLECTION, mHeadingSpread, mStepLength,
-					mStepLengthSpread, 0, DEFAULT_WEIGHT));
+					mStepLengthSpread, DEFAULT_WEIGHT));
 			numberOfParticles--;
 		}
 		
@@ -130,25 +131,25 @@ public class ParticlePosition implements PositionModel {
 	 *            standard deviation of the distance from the posX, posY
 	 * @param positionListener
 	 */
-	public ParticlePosition(double posX, double posY, double sigma, int area,
+	public ParticlePosition(double posX, double posY, double sigma,
 			PositionModelUpdateListener positionListener) {
 		this(positionListener);
 		mPositionSigma = sigma;
-		setPosition(posX, posY, area, DEFAULT_WEIGHT);
+		setPosition(posX, posY, DEFAULT_WEIGHT);
 	}
 
 
-	public ParticlePosition(double posX, double posY, double sigma, int area,
+	public ParticlePosition(double posX, double posY, double sigma,
 			PositionModelUpdateListener positionListener,
 			ParticleGenerationMode particleGeneration) {
 		this(positionListener);
 		mPositionSigma = sigma;
 		mParticleGeneration = particleGeneration;
-		setPosition(posX, posY, area, DEFAULT_WEIGHT);
+		setPosition(posX, posY, DEFAULT_WEIGHT);
 	}
 
 	public ParticlePosition(double x, double y) {
-		this(x, y, 1, 0, null, ParticleGenerationMode.GAUSSIAN);
+		this(x, y, 1, null, ParticleGenerationMode.GAUSSIAN);
 	}
 
 
@@ -175,35 +176,35 @@ public class ParticlePosition implements PositionModel {
 
 
 	@Override
-	public void setPosition(double posX, double posY, int area, int weight) {
+	public void setPosition(double posX, double posY, int weight) {
 		if (mParticleGeneration == ParticleGenerationMode.GAUSSIAN) {
-			setPositionNormDistr(posX, posY, mPositionSigma, area, weight);
+			setPositionNormDistr(posX, posY, mPositionSigma, weight);
 		} else {
-			setPositionEvenlySpread(posX, posY, 2*mPositionSigma, 2*mPositionSigma, area, DEFAULT_WEIGHT);
+			setPositionEvenlySpread(posX, posY, 2*mPositionSigma, 2*mPositionSigma, DEFAULT_WEIGHT);
 		}
 	}
 
 
-	public void setPositionNormDistr(double posX, double posY, double sigma, int area, int weight) {
+	public void setPositionNormDistr(double posX, double posY, double sigma, int weight) {
 		int number = mNumberOfParticles;
 		particles = new HashSet<Particle>(mNumberOfParticles);
 		while (number > 0) {
 			particles.add(Particle.polarNormalDistr(posX, posY, sigma,
 					HEADING_DEFLECTION, mHeadingSpread, mStepLength,
-					mStepLengthSpread, area, weight));
+					mStepLengthSpread, weight));
 			number--;
 		}
 		computeCloudAverageState();
 	}
 
 
-	public void setPositionEvenlySpread(double posX, double posY, double spreadX, double spreadY, int area, int weight) {
+	public void setPositionEvenlySpread(double posX, double posY, double spreadX, double spreadY, int weight) {
 		int number = mNumberOfParticles;
 		particles = new HashSet<Particle>(mNumberOfParticles);
 		while (number > 0) {
 			particles.add(Particle.evenSpread(posX, posY, spreadX, spreadY,
 					HEADING_DEFLECTION, mHeadingSpread, mStepLength,
-					mStepLengthSpread, area, weight));
+					mStepLengthSpread, weight));
 			number--;
 		}
 		computeCloudAverageState();
@@ -236,7 +237,7 @@ public class ParticlePosition implements PositionModel {
 				while (number > 0) {
 					particles.add(Particle.evenSpread(gridSpacing * x, gridSpacing * y, gridSpacing,
 							gridSpacing, HEADING_DEFLECTION, mHeadingSpread,
-							mStepLength, mStepLengthSpread, area, DEFAULT_WEIGHT));
+							mStepLength, mStepLengthSpread, DEFAULT_WEIGHT));
 					number--;
 				}
 			}
@@ -304,7 +305,7 @@ public class ParticlePosition implements PositionModel {
 		HashSet<Particle> living = new HashSet<Particle>(particles.size());
 		for (Particle particle : particles) {
 			Particle newParticle = updateParticle(particle, hdg, 0.7);
-			if (newParticle.getIntWeight() != 0) {
+			if (newParticle.getWeight() > 0) {
 				living.add(newParticle);
 			}
 		}
@@ -330,9 +331,9 @@ public class ParticlePosition implements PositionModel {
 	public void onStep(double alpha, double hdg, double hdgSpread,
 			double length, double lengthSpread) {
 
-		//Log.d(TAG, "onStep(hdg: " + hdg + ", length: " + length
-		//		+ ", hdgSpread: " + hdgSpread + ", lengthSpread: "
-		//		+ lengthSpread);
+		System.out.println("onStep(hdg: " + hdg + ", length: " + length + ", hdgSpread: " + hdgSpread + 
+			", lengthSpread: " + lengthSpread);
+
 		HashSet<Particle> living = new HashSet<Particle>(particles.size());
 		for (Particle particle : particles) {
 			if (Math.random() > alpha) {
@@ -342,7 +343,7 @@ public class ParticlePosition implements PositionModel {
 			double lengthFactor = 1.0 + lengthSpread * NormalDistribution.inverse(Math.random()) / length;
 			Particle newParticle = updateParticle(particle, hdg + hdgSpread
 					* NormalDistribution.inverse(Math.random()), lengthFactor);
-			if (newParticle.getIntWeight() != 0) {
+			if (newParticle.getWeight() > 0) {
 				living.add(particle);
 			}
 		}
@@ -352,7 +353,7 @@ public class ParticlePosition implements PositionModel {
 			resample();
 		}
 
-		System.out.println("no. particles = " + particles.size());
+		System.out.println("No. particles = " + particles.size());
 
 		computeCloudAverageState();
 
@@ -388,7 +389,7 @@ public class ParticlePosition implements PositionModel {
 				for (Line2D wall : mArea.getWallsModel().getWorkingSet(
 						state[0], state[1])) {
 					if (trajectory.intersect(wall)) {
-						return new Particle();
+						return particle.copy(0);   // Return a dead particle of weight 0
 					}
 				}
 			}
@@ -397,7 +398,7 @@ public class ParticlePosition implements PositionModel {
 		state[0] += deltaX;
 		state[1] += deltaY;
 
-		return new Particle(state[0], state[1], hdg, lengthModifier, 0, particle.getIntWeight());
+		return new Particle(state[0], state[1], hdg, lengthModifier, particle.getWeight());
 	}
 
 
@@ -421,7 +422,7 @@ public class ParticlePosition implements PositionModel {
 	 */
 	public void onRssMeasurementUpdate(double x, double y) {
 
-		//Log.d(TAG, "onRssMeasurement()");
+		System.out.println("onRssMeasurement()");
 		HashSet<Particle> living = new HashSet<Particle>(particles.size());
 
 		if (particles.isEmpty()) {
@@ -429,27 +430,27 @@ public class ParticlePosition implements PositionModel {
 			// distribute particles
 			//setPositionBasedOnProbabilityMap(mWifiProbabilityMap, 0);
 			System.out.println("Particles don't exist! Do something!");
-		} else {
+		} 
+		else {
 
 			for (Particle particle : particles) {
-				Particle newParticle = particle.copy(particle.getIntWeight());
-				double newdoubleWeight = WiFi.observationProb(particle.getX(), particle.getY(), x, y);
-				newParticle.setDoubleWeight(newdoubleWeight);
+				Particle newParticle = particle.copy(particle.getWeight());
+				double prob = WiFi.observationProb(particle.getX(), particle.getY(), x, y);
+				newParticle.setWeight((int)(Math.round(particle.getWeight()*prob)));
 
-				normalizeWeight();
-
-				if (newParticle.getIntWeight() >= 1) {
+				if (newParticle.getWeight() >= 1) {
 					living.add(newParticle);
 				}
 			}
 			particles = living;
+			resample();
 		}
 
-		if (particles.size() < 0.75 * mNumberOfParticles) {
+		if (particles.size() < 0.65 * mNumberOfParticles) {
 			resample();
 		}
 		
-		System.out.println("no. particles = " + particles.size());
+		System.out.println("No. particles = " + particles.size());
 
 		computeCloudAverageState();
 	}
@@ -501,8 +502,8 @@ public class ParticlePosition implements PositionModel {
 
 
 	/**
-	 * Resample particles. A particle is selected at a frequency proportional to its intWeight.
-	 * Newly generated particles all have DEFAULT_WEIGHT
+	 * Resample particles. A particle is selected at a frequency proportional to its weight.
+	 * Newly generated particles all have DEFAULT_WEIGHT.
 	 */
 	private void resample() {
 
@@ -513,11 +514,11 @@ public class ParticlePosition implements PositionModel {
 
 		int sum = 0;
 		for (Particle p: temp) {
-			sum += p.getIntWeight();
+			sum += p.getWeight();
 		}
 		double cumulativeFreq = 0;
 		for (int i=0; i<temp.size(); i++) {
-			cumulativeFreq += temp.get(i).getIntWeight() / sum;
+			cumulativeFreq += temp.get(i).getWeight() / sum;
 			freq.add(new Double(cumulativeFreq));
 		}
 
@@ -533,8 +534,6 @@ public class ParticlePosition implements PositionModel {
 			}
 			r = generator.nextDouble();
 		}
-
-		particles.addAll(temp);
 	}
 
 
@@ -630,13 +629,6 @@ public class ParticlePosition implements PositionModel {
 
 	public double getHeading() {
 		return mHeading;
-	}
-
-
-	private void normalizeWeight() {
-		for (Particle p: particles) {
-			p.setIntWeight((int)(Math.round(p.getDoubleWeight() * 100)));
-		}
 	}
 
 
