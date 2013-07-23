@@ -148,9 +148,31 @@ public class ParticlePosition implements PositionModel {
 		setPosition(posX, posY, DEFAULT_WEIGHT);
 	}
 
+
+
 	public ParticlePosition(double x, double y) {
-		this(x, y, 1, null, ParticleGenerationMode.GAUSSIAN);
+		//this(x, y, 1, null, ParticleGenerationMode.GAUSSIAN);
+		int numberOfParticles = DEFAULT_PARTICLE_COUNT;
+		particles = new HashSet<Particle>(numberOfParticles);
+		while (numberOfParticles > 0) {
+			particles.add(Particle.polarNormalDistr(-30, 25, 1, 
+					HEADING_DEFLECTION, mHeadingSpread, mStepLength,
+					mStepLengthSpread, DEFAULT_WEIGHT));
+			numberOfParticles--;
+		}
+		
+		/*
+		for (Particle p : particles) {
+			System.out.println(p);
+		}
+		*/
+		
+		mArea = new EmptyArea();
+
+		mCoords = new double[4];
+		mCloudAverageState = new double[4];
 	}
+
 
 
 	public void setArea(Area area) {
@@ -375,12 +397,15 @@ public class ParticlePosition implements PositionModel {
 	 */
 	private Particle updateParticle(Particle particle, double hdg, double lengthModifier) {
 
+		Random ran = new Random();
+
 		System.out.println("updateParticle(): hdg = " + hdg + ", length = " + lengthModifier);
 		double[] state = particle.getState();
-		double deltaX = (lengthModifier * state[3] * Math.sin(hdg + state[2]));
-		double deltaY = (lengthModifier * state[3] * Math.cos(hdg + state[2]));
-		Line2D trajectory = new Line2D(state[0], state[1], state[0] + deltaX,
-				state[1] + deltaY);
+
+		// Gaussian noise: http://www.javamex.com/tutorials/random_numbers/gaussian_distribution_2.shtml
+		double deltaX = (lengthModifier * state[3] * Math.sin(hdg + state[2])) + ran.nextGaussian() * 0.5;
+		double deltaY = (lengthModifier * state[3] * Math.cos(hdg + state[2])) + ran.nextGaussian() * 0.5;
+		Line2D trajectory = new Line2D(state[0], state[1], state[0] + deltaX, state[1] + deltaY);
 
 		if (mArea != null) {
 

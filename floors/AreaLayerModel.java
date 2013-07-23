@@ -135,6 +135,10 @@ public class AreaLayerModel implements Serializable {
 		return Collections.unmodifiableCollection(completeSet);
 	}
 
+	public Set<Line2D> getWalls() {
+		return completeSet;
+	}
+
 	public Collection<Line2D> getWorkingSet() {
 		return Collections.unmodifiableCollection(workingSet);
 	}

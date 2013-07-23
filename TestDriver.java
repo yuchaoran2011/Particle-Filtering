@@ -12,10 +12,10 @@ public class TestDriver {
 
 
 	public static void main(String[] args) {
+		
 		GatewayServer gatewayServer = new GatewayServer(new TestDriver());
         gatewayServer.start();
         System.out.println("Gateway Server Started");
-
 
         
 		// Get initial position and feed it into ParticlePosition constructor
