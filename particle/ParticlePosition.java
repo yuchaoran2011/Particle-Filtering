@@ -323,21 +323,23 @@ public class ParticlePosition implements PositionModel {
 	 */
 	public void onStep(double hdg, double length) {
 
-		System.out.println("onStep(hdg: " + hdg + ", length: " + length + ")\n");
-		HashSet<Particle> living = new HashSet<Particle>(particles.size());
-		for (Particle particle : particles) {
-			Particle newParticle = updateParticle(particle, hdg, 0.7);
-			if (newParticle.getWeight() > 0) {
-				living.add(newParticle);
+		if (length > -5.0) {
+			System.out.println("onStep(hdg: " + hdg + ", length: " + length + ")\n");
+			HashSet<Particle> living = new HashSet<Particle>(particles.size());
+			for (Particle particle : particles) {
+				Particle newParticle = updateParticle(particle, hdg, length);
+				if (newParticle.getWeight() > 0) {
+					living.add(newParticle);
+				}
 			}
+			particles = living;
+			System.out.println("No. particles = " + particles.size());
+
+			computeCloudAverageState();
+
+			// adjustStepLengthDistribution();
+			// adjustHeadingDistribution();
 		}
-		particles = living;
-		System.out.println("No. particles = " + particles.size());
-
-		computeCloudAverageState();
-
-		// adjustStepLengthDistribution();
-		// adjustHeadingDistribution();
 	}
 
 
@@ -353,32 +355,34 @@ public class ParticlePosition implements PositionModel {
 	public void onStep(double alpha, double hdg, double hdgSpread,
 			double length, double lengthSpread) {
 
-		System.out.println("onStep(hdg: " + hdg + ", length: " + length + ", hdgSpread: " + hdgSpread + 
-			", lengthSpread: " + lengthSpread);
+		if (length > -5.0) {
 
-		HashSet<Particle> living = new HashSet<Particle>(particles.size());
-		for (Particle particle : particles) {
-			if (Math.random() > alpha) {
-				living.add(particle);
-				continue;
+			System.out.println("onStep(hdg: " + hdg + ", length: " + length + ", hdgSpread: " + hdgSpread + 
+				", lengthSpread: " + lengthSpread);
+
+			HashSet<Particle> living = new HashSet<Particle>(particles.size());
+			for (Particle particle : particles) {
+				if (Math.random() > alpha) {
+					living.add(particle);
+					continue;
+				}
+				double lengthFactor = 1.0 + lengthSpread * NormalDistribution.inverse(Math.random()) / length;
+				Particle newParticle = updateParticle(particle, hdg + hdgSpread
+						* NormalDistribution.inverse(Math.random()), lengthFactor);
+				if (newParticle.getWeight() > 0) {
+					living.add(particle);
+				}
 			}
-			double lengthFactor = 1.0 + lengthSpread * NormalDistribution.inverse(Math.random()) / length;
-			Particle newParticle = updateParticle(particle, hdg + hdgSpread
-					* NormalDistribution.inverse(Math.random()), lengthFactor);
-			if (newParticle.getWeight() > 0) {
-				living.add(particle);
+			particles = living;
+
+			if (particles.size() < 0.65 * mNumberOfParticles) {
+				resample();
 			}
+
+			System.out.println("No. particles = " + particles.size());
+
+			computeCloudAverageState();
 		}
-		particles = living;
-
-		if (particles.size() < 0.75 * mNumberOfParticles) {
-			resample();
-		}
-
-		System.out.println("No. particles = " + particles.size());
-
-		computeCloudAverageState();
-
 	}
 
 
@@ -399,7 +403,7 @@ public class ParticlePosition implements PositionModel {
 
 		Random ran = new Random();
 
-		System.out.println("updateParticle(): hdg = " + hdg + ", length = " + lengthModifier);
+		//System.out.println("updateParticle(): hdg = " + hdg + ", length = " + lengthModifier);
 		double[] state = particle.getState();
 
 		// Gaussian noise: http://www.javamex.com/tutorials/random_numbers/gaussian_distribution_2.shtml
@@ -407,13 +411,17 @@ public class ParticlePosition implements PositionModel {
 		double deltaY = (lengthModifier * state[3] * Math.cos(hdg + state[2])) + ran.nextGaussian() * 0.5;
 		Line2D trajectory = new Line2D(state[0], state[1], state[0] + deltaX, state[1] + deltaY);
 
+
 		if (mArea != null) {
 
 			// wall collision
 			if (mCheckWallsCollisions) {
-				for (Line2D wall : mArea.getWallsModel().getWorkingSet(
-						state[0], state[1])) {
+				Collection<Line2D> walls = mArea.getWallsModel().getWalls();
+				//System.out.println("No. walls: " + walls.size());
+				for (Line2D wall: walls) {
 					if (trajectory.intersect(wall)) {
+						//System.out.println("Particle collided with all and is assigned weight 0!");
+						mNumberOfParticles--;
 						return particle.copy(0);   // Return a dead particle of weight 0
 					}
 				}
@@ -497,7 +505,7 @@ public class ParticlePosition implements PositionModel {
 				Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY,
 				Double.POSITIVE_INFINITY };
 		for (Particle particle : particles) {
-			for (int i = 0; i < particle.getState().length; i++) {
+			for (int i = 0; i < particle.getState().length-1; i++) {
 				mCloudAverageState[i] += particle.getState()[i];
 				min[i] = Math.min(min[i], particle.getState()[i]);
 				max[i] = Math.max(max[i], particle.getState()[i]);
