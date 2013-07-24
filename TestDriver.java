@@ -17,6 +17,12 @@ public class TestDriver {
         gatewayServer.start();
         System.out.println("Gateway Server Started");
 
+
+        /*
+        double x = 0.4232579895258955;
+        double y = 0.4232579895258955;
+        System.out.println(x * y);
+		*/
         
 		// Get initial position and feed it into ParticlePosition constructor
 

@@ -25,9 +25,6 @@ import pf.utils.Line2D;
 import pf.utils.Point2D;
 import pf.utils.Rectangle;
 
-import pf.wifi.WiFi;
-
-
 
 
 /**
@@ -154,7 +151,7 @@ public class ParticlePosition implements PositionModel {
 		int numberOfParticles = DEFAULT_PARTICLE_COUNT;
 		particles = new HashSet<Particle>(numberOfParticles);
 		while (numberOfParticles > 0) {
-			particles.add(Particle.polarNormalDistr(-30, 25, 1, 
+			particles.add(Particle.polarNormalDistr(x, y, 1, 
 					HEADING_DEFLECTION, mHeadingSpread, mStepLength,
 					mStepLengthSpread, DEFAULT_WEIGHT));
 			numberOfParticles--;
@@ -332,10 +329,11 @@ public class ParticlePosition implements PositionModel {
 				}
 			}
 			particles = living;
-			System.out.println("Before resampling: No. particles = " + particles.size());
+			System.out.println("No. particles = " + particles.size());
 
 
 			if (particles.size() < 0.65*DEFAULT_PARTICLE_COUNT) {
+				System.out.println("Too few particles! Resampling...");
 				resample();
 				System.out.println("After resampling: No. particles = " + particles.size());
 			}
@@ -384,7 +382,7 @@ public class ParticlePosition implements PositionModel {
 				resample();
 			}
 
-			System.out.println("No. particles = " + particles.size());
+			System.out.println("onStep resampling finished: No. particles = " + particles.size());
 
 			computeCloudAverageState();
 		}
@@ -422,7 +420,6 @@ public class ParticlePosition implements PositionModel {
 			// wall collision
 			if (mCheckWallsCollisions) {
 				Collection<Line2D> walls = mArea.getWallsModel().getWalls();
-				//System.out.println("No. walls: " + walls.size());
 				for (Line2D wall: walls) {
 					if (trajectory.intersect(wall)) {
 						//System.out.println("Particle collided with wall and is assigned weight 0!");
@@ -458,7 +455,7 @@ public class ParticlePosition implements PositionModel {
 	/**
 	 * Update particle cloud based on a new RSS measurement.
 	 */
-	public void onRssMeasurementUpdate(double x, double y) {
+	public void onRssMeasurementUpdate(double confidence, double x, double y) {
 
 		System.out.println("onRssMeasurement()");
 		HashSet<Particle> living = new HashSet<Particle>();
@@ -474,42 +471,27 @@ public class ParticlePosition implements PositionModel {
 				Particle newParticle = particle.copy(particle.getWeight());
 
 
-
-				System.out.println(particle.getX() + " " + particle.getY());
 				double result = (particle.getX()-x)*(particle.getX()-x)+(particle.getY()-y)*(particle.getY()-y);
-				//System.out.println(result);
-				//System.out.println(Math.exp(-result/(2.0)));
-				double finalResult = 1.0/(Math.sqrt(2.0*Math.PI) * Math.exp(-result/(2.0)));
-				System.out.println(finalResult);
+				double firstPart = 1.0/(Math.sqrt(2.0*Math.PI) * confidence);
+				double secondPart = Math.exp(-result/(2.0 * confidence * confidence));
+				double finalResult = firstPart * secondPart;
+				System.out.println("finalResult: " + finalResult);
+
+				newParticle.setWeight((int)(Math.round(particle.getWeight()*finalResult)));
 
 
-
-				//double prob = WiFi.observationProb(particle.getX(), particle.getY(), x, y);
-				//System.out.println("prob: "+prob);
-				if (result > 10) {
-					newParticle.setWeight(0);
-				}
-				else {
-					newParticle.setWeight((int)(Math.round(particle.getWeight()*finalResult)));
-				}
-
-
-				System.out.println(newParticle.getWeight());
+				System.out.println("Updated particle weight:" + newParticle.getWeight());
 				if (newParticle.getWeight() >= 1) {
 					living.add(newParticle);
 				}
 			}
 			particles = living;
 			System.out.println(particles.size());
-			resample();
-		}
-
-		if (particles.size() < 0.65 * DEFAULT_PARTICLE_COUNT) {
-			System.out.println("Not enought particles! Resampling...");
+			System.out.println("WiFi measurment update finished! Resampling...");
 			resample();
 		}
 		
-		System.out.println("No. particles = " + particles.size());
+		System.out.println("After resampling: No. particles = " + particles.size());
 
 		computeCloudAverageState();
 	}
@@ -598,7 +580,6 @@ public class ParticlePosition implements PositionModel {
 			}
 			r = generator.nextDouble();
 		}
-		System.out.println("Resampling finished! No. particles: "+ mNumberOfParticles);
 	}
 
 
