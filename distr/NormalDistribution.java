@@ -61,6 +61,6 @@ public class NormalDistribution {
 
 
 	public static double pdf(double sigma, double xMinusMiuSqrd) {
-		return (1/(Math.sqrt(2*Math.PI))*sigma) * Math.exp(-xMinusMiuSqrd/(2*sigma*sigma));
+		return (1.0/(Math.sqrt(2.0*Math.PI))*sigma) * Math.exp(-xMinusMiuSqrd/(2.0*sigma*sigma));
 	}
 }

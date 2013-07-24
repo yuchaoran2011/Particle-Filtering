@@ -18,7 +18,6 @@ import pf.particle.PositionModelUpdateListener;
 import pf.particle.MotionProvider;
 import pf.particle.ProbabilityMap;
 
-//import pf.navigation.PositionRenderer;
 //import pf.service.wifi.WifiPositionUpdateListener;
 
 import pf.utils.GridPoint2D;
@@ -53,7 +52,7 @@ public class ParticlePosition implements PositionModel {
 	private static final double DEFAULT_STEP_LENGTH_SPREAD = .1f * DEFAULT_STEP_LENGTH;
 	private static final double HEADING_DEFLECTION = 0.0f;
 	private static final double DEFAULT_HEADING_SPREAD = 10f / 180f * (double) Math.PI;
-	private static final int DEFAULT_WEIGHT = 100;
+	private static final int DEFAULT_WEIGHT = 1000;
 	private static final double NANO = Math.pow(10, 9);
 
 	private double mPositionSigma = 1.0f;
@@ -360,7 +359,7 @@ public class ParticlePosition implements PositionModel {
 			System.out.println("onStep(hdg: " + hdg + ", length: " + length + ", hdgSpread: " + hdgSpread + 
 				", lengthSpread: " + lengthSpread);
 
-			HashSet<Particle> living = new HashSet<Particle>(particles.size());
+			HashSet<Particle> living = new HashSet<Particle>();
 			for (Particle particle : particles) {
 				if (Math.random() > alpha) {
 					living.add(particle);
@@ -399,7 +398,7 @@ public class ParticlePosition implements PositionModel {
 	 *            distance of the particle travel
 	 * @return an updated particle 
 	 */
-	private Particle updateParticle(Particle particle, double hdg, double lengthModifier) {
+	private Particle updateParticle(Particle particle, double hdg, double length) {
 
 		Random ran = new Random();
 
@@ -407,8 +406,8 @@ public class ParticlePosition implements PositionModel {
 		double[] state = particle.getState();
 
 		// Gaussian noise: http://www.javamex.com/tutorials/random_numbers/gaussian_distribution_2.shtml
-		double deltaX = (lengthModifier * state[3] * Math.sin(hdg + state[2])) + ran.nextGaussian() * 0.5;
-		double deltaY = (lengthModifier * state[3] * Math.cos(hdg + state[2])) + ran.nextGaussian() * 0.5;
+		double deltaX = (length * Math.sin(hdg + state[2])) + ran.nextGaussian() * 0.5;
+		double deltaY = (length * Math.cos(hdg + state[2])) + ran.nextGaussian() * 0.5;
 		Line2D trajectory = new Line2D(state[0], state[1], state[0] + deltaX, state[1] + deltaY);
 
 
@@ -420,7 +419,7 @@ public class ParticlePosition implements PositionModel {
 				//System.out.println("No. walls: " + walls.size());
 				for (Line2D wall: walls) {
 					if (trajectory.intersect(wall)) {
-						//System.out.println("Particle collided with all and is assigned weight 0!");
+						System.out.println("Particle collided with wall and is assigned weight 0!");
 						mNumberOfParticles--;
 						return particle.copy(0);   // Return a dead particle of weight 0
 					}
@@ -431,7 +430,7 @@ public class ParticlePosition implements PositionModel {
 		state[0] += deltaX;
 		state[1] += deltaY;
 
-		return new Particle(state[0], state[1], hdg, lengthModifier, particle.getWeight());
+		return new Particle(state[0], state[1], hdg, length, particle.getWeight());
 	}
 
 
@@ -456,11 +455,10 @@ public class ParticlePosition implements PositionModel {
 	public void onRssMeasurementUpdate(double x, double y) {
 
 		System.out.println("onRssMeasurement()");
-		HashSet<Particle> living = new HashSet<Particle>(particles.size());
+		HashSet<Particle> living = new HashSet<Particle>();
 
 		if (particles.isEmpty()) {
 			//Log.d(TAG, "onRssMeasurementUpdate: no particles, resetting position from probability map");
-			// distribute particles
 			//setPositionBasedOnProbabilityMap(mWifiProbabilityMap, 0);
 			System.out.println("Particles don't exist! Do something!");
 		} 
@@ -468,18 +466,40 @@ public class ParticlePosition implements PositionModel {
 
 			for (Particle particle : particles) {
 				Particle newParticle = particle.copy(particle.getWeight());
-				double prob = WiFi.observationProb(particle.getX(), particle.getY(), x, y);
-				newParticle.setWeight((int)(Math.round(particle.getWeight()*prob)));
 
+
+
+				System.out.println(particle.getX() + " " + particle.getY());
+				double result = (particle.getX()-x)*(particle.getX()-x)+(particle.getY()-y)*(particle.getY()-y);
+				//System.out.println(result);
+				//System.out.println(Math.exp(-result/(2.0)));
+				double finalResult = 1.0/(Math.sqrt(2.0*Math.PI) * Math.exp(-result/(2.0)));
+				System.out.println(finalResult);
+
+
+
+				//double prob = WiFi.observationProb(particle.getX(), particle.getY(), x, y);
+				//System.out.println("prob: "+prob);
+				if (result > 10) {
+					newParticle.setWeight(0);
+				}
+				else {
+					newParticle.setWeight((int)(Math.round(particle.getWeight()*finalResult)));
+				}
+
+
+				System.out.println(newParticle.getWeight());
 				if (newParticle.getWeight() >= 1) {
 					living.add(newParticle);
 				}
 			}
 			particles = living;
+			System.out.println(particles.size());
 			resample();
 		}
 
-		if (particles.size() < 0.65 * mNumberOfParticles) {
+		if (particles.size() < 0.65 * DEFAULT_PARTICLE_COUNT) {
+			System.out.println("Not enought particles! Resampling...");
 			resample();
 		}
 		
@@ -543,7 +563,10 @@ public class ParticlePosition implements PositionModel {
 		ArrayList<Particle> temp = new ArrayList<Particle>();
 		ArrayList<Double> freq = new ArrayList<Double>();
 		temp.addAll(particles);
+		System.out.println("particles size: "+particles.size());
+		System.out.println("temp size: "+temp.size());
 		particles.clear();
+		mNumberOfParticles = 0;
 
 		int sum = 0;
 		for (Particle p: temp) {
@@ -562,11 +585,14 @@ public class ParticlePosition implements PositionModel {
 			for (int j=0; j<temp.size(); j++) {
 				if (r >= freq.get(i)) {
 					particles.add(temp.get(i).copy(DEFAULT_WEIGHT));
+					mNumberOfParticles++;
+					System.out.println("One particle added!");
 					break;
 				}
 			}
 			r = generator.nextDouble();
 		}
+		System.out.println("Resampling finished! No. particles: "+ mNumberOfParticles);
 	}
 
 
@@ -619,14 +645,6 @@ public class ParticlePosition implements PositionModel {
 		}
 	}
 
-	
-	
-	/*
-	public void probabilityMapChanged(ProbabilityMap map) {
-
-		mWifiProbabilityMap = map;
-		onRssMeasurementUpdate();
-	}*/
 
 	
 	public void wifiPositionChanged(double heading, double x, double y) {
@@ -663,70 +681,4 @@ public class ParticlePosition implements PositionModel {
 	public double getHeading() {
 		return mHeading;
 	}
-
-
-	/*
-	@Override
-	public void updatePreferences(SharedPreferences prefs) {
-
-		if (prefs == null) {
-			mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
-			mStepProbability = DEFAULT_ALPHA;
-			mStepLength = DEFAULT_STEP_LENGTH;
-			mStepLengthSpread = DEFAULT_STEP_LENGTH_SPREAD;
-			mHeadingSpread = DEFAULT_HEADING_SPREAD;
-			mCheckWallsCollisions = true;
-		} else {
-
-			try {
-			mNumberOfParticles = Integer.valueOf(prefs.getString(
-					"particle_filter_number_of_particles_preference",
-					String.valueOf(DEFAULT_PARTICLE_COUNT)));
-			} catch (NumberFormatException e) {
-				e.printStackTrace();
-				mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
-			}
-
-			try {
-			mStepProbability = double.valueOf(prefs.getString(
-					"step_probability_preference",
-					String.valueOf(DEFAULT_ALPHA)));
-			} catch (NumberFormatException e) {
-				e.printStackTrace();
-				mStepProbability = DEFAULT_ALPHA;
-			}
-
-			try {
-			mStepLength = double.valueOf(prefs.getString(
-					"step_length_preference",
-					String.valueOf(DEFAULT_STEP_LENGTH)));
-			} catch (NumberFormatException e) {
-				e.printStackTrace();
-				mStepLength = DEFAULT_STEP_LENGTH;
-			}
-
-			try {
-			mStepLengthSpread = double.valueOf(prefs.getString(
-					"step_length_spread_preference",
-					String.valueOf(DEFAULT_STEP_LENGTH_SPREAD)));
-			} catch (NumberFormatException e) {
-				e.printStackTrace();
-				mStepLengthSpread = DEFAULT_STEP_LENGTH_SPREAD;
-			}
-
-			try {
-			mHeadingSpread = double.valueOf(prefs.getString(
-					"heading_spread_preference",
-					String.valueOf(DEFAULT_HEADING_SPREAD)));
-			} catch (NumberFormatException e) {
-				e.printStackTrace();
-				mHeadingSpread = DEFAULT_HEADING_SPREAD;
-			}
-			
-			mCheckWallsCollisions = prefs.getBoolean(
-					"check_walls_collisions_preference", true);
-		}
-
-	}*/
-
 }
