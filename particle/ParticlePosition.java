@@ -332,7 +332,13 @@ public class ParticlePosition implements PositionModel {
 				}
 			}
 			particles = living;
-			System.out.println("No. particles = " + particles.size());
+			System.out.println("Before resampling: No. particles = " + particles.size());
+
+
+			if (particles.size() < 0.65*DEFAULT_PARTICLE_COUNT) {
+				resample();
+				System.out.println("After resampling: No. particles = " + particles.size());
+			}
 
 			computeCloudAverageState();
 
@@ -419,7 +425,7 @@ public class ParticlePosition implements PositionModel {
 				//System.out.println("No. walls: " + walls.size());
 				for (Line2D wall: walls) {
 					if (trajectory.intersect(wall)) {
-						System.out.println("Particle collided with wall and is assigned weight 0!");
+						//System.out.println("Particle collided with wall and is assigned weight 0!");
 						mNumberOfParticles--;
 						return particle.copy(0);   // Return a dead particle of weight 0
 					}
@@ -583,10 +589,10 @@ public class ParticlePosition implements PositionModel {
 
 		for (int i=0; i<DEFAULT_PARTICLE_COUNT; i++) {
 			for (int j=0; j<temp.size(); j++) {
-				if (r >= freq.get(i)) {
-					particles.add(temp.get(i).copy(DEFAULT_WEIGHT));
+				if (r >= freq.get(j)) {
+					particles.add(temp.get(j).copy(DEFAULT_WEIGHT));
 					mNumberOfParticles++;
-					System.out.println("One particle added!");
+					//System.out.println("One particle added!");
 					break;
 				}
 			}
