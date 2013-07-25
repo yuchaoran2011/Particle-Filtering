@@ -157,12 +157,6 @@ public class ParticlePosition implements PositionModel {
 			numberOfParticles--;
 		}
 		
-		/*
-		for (Particle p : particles) {
-			System.out.println(p);
-		}
-		*/
-		
 		mArea = new EmptyArea();
 
 		mCoords = new double[4];
@@ -333,9 +327,9 @@ public class ParticlePosition implements PositionModel {
 
 
 			if (particles.size() < 0.65*DEFAULT_PARTICLE_COUNT) {
-				System.out.println("Too few particles! Resampling...");
+				//System.out.println("Too few particles! Resampling...");
 				resample();
-				System.out.println("After resampling: No. particles = " + particles.size());
+				//System.out.println("After resampling: No. particles = " + particles.size());
 			}
 
 			computeCloudAverageState();
@@ -410,8 +404,8 @@ public class ParticlePosition implements PositionModel {
 		double[] state = particle.getState();
 
 		// Gaussian noise: http://www.javamex.com/tutorials/random_numbers/gaussian_distribution_2.shtml
-		double deltaX = (length * Math.sin(hdg + state[2])) + ran.nextGaussian() * 0.5;
-		double deltaY = (length * Math.cos(hdg + state[2])) + ran.nextGaussian() * 0.5;
+		double deltaX = (length * Math.sin(hdg + state[2])); //+ ran.nextGaussian() * 0.5;
+		double deltaY = (length * Math.cos(hdg + state[2])); //+ ran.nextGaussian() * 0.5;
 		Line2D trajectory = new Line2D(state[0], state[1], state[0] + deltaX, state[1] + deltaY);
 
 
@@ -460,11 +454,22 @@ public class ParticlePosition implements PositionModel {
 		System.out.println("onRssMeasurement()");
 		HashSet<Particle> living = new HashSet<Particle>();
 
+
 		if (particles.isEmpty()) {
-			//Log.d(TAG, "onRssMeasurementUpdate: no particles, resetting position from probability map");
-			//setPositionBasedOnProbabilityMap(mWifiProbabilityMap, 0);
-			System.out.println("Particles don't exist! Do something!");
-		} 
+			System.out.println("Particles don't exist! Regenerating particles based on WiFi location");
+
+			int numberOfParticles = DEFAULT_PARTICLE_COUNT;
+			particles = new HashSet<Particle>(numberOfParticles);
+			while (numberOfParticles > 0) {
+				particles.add(Particle.polarNormalDistr(x, y, 1, 
+							HEADING_DEFLECTION, mHeadingSpread, mStepLength,
+							mStepLengthSpread, DEFAULT_WEIGHT));
+				numberOfParticles--;	
+				}	
+			mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
+		}
+
+
 		else {
 
 			for (Particle particle : particles) {
@@ -475,7 +480,7 @@ public class ParticlePosition implements PositionModel {
 				double firstPart = 1.0/(Math.sqrt(2.0*Math.PI) * confidence);
 				double secondPart = Math.exp(-result/(2.0 * confidence * confidence));
 				double finalResult = firstPart * secondPart;
-				System.out.println("finalResult: " + finalResult);
+				//System.out.println("finalResult: " + finalResult);
 
 				newParticle.setWeight((int)(Math.round(particle.getWeight()*finalResult)));
 
@@ -574,7 +579,6 @@ public class ParticlePosition implements PositionModel {
 				if (r >= freq.get(j)) {
 					particles.add(temp.get(j).copy(DEFAULT_WEIGHT));
 					mNumberOfParticles++;
-					//System.out.println("One particle added!");
 					break;
 				}
 			}
