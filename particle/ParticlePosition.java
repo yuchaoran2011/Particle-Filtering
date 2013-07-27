@@ -528,7 +528,8 @@ public class ParticlePosition implements PositionModel {
 			mCloudAverageState[i] /= particles.size();
 		}
 
-		//Log.d(TAG, "computeCloudAverageState: " + Arrays.toString(mCloudAverageState));
+		System.out.println("Avg x: " + mCloudAverageState[0] + " Avg y: " + mCloudAverageState[1]);
+
 
 		mBox = new Rectangle(min[0] - 2 * DEFAULT_STEP_LENGTH, min[1] - 2
 				* DEFAULT_STEP_LENGTH, max[0] + 2 * DEFAULT_STEP_LENGTH, max[1]
