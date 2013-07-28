@@ -447,9 +447,9 @@ public class ParticlePosition implements PositionModel {
 
 
 	/**
-	 * Update particle cloud based on a new RSS measurement.
+	 * Update particle cloud based on a new RSS measurement and image.
 	 */
-	public void onRssMeasurementUpdate(double confidence, double x, double y) {
+	public void onRssImageUpdate(double sigma, double x, double y) {
 
 		System.out.println("onRssMeasurement()");
 		HashSet<Particle> living = new HashSet<Particle>();
@@ -477,8 +477,8 @@ public class ParticlePosition implements PositionModel {
 
 
 				double result = (particle.getX()-x)*(particle.getX()-x)+(particle.getY()-y)*(particle.getY()-y);
-				double firstPart = 1.0/(Math.sqrt(2.0*Math.PI) * confidence);
-				double secondPart = Math.exp(-result/(2.0 * confidence * confidence));
+				double firstPart = 1.0/(Math.sqrt(2.0*Math.PI) * sigma);
+				double secondPart = Math.exp(-result/(2.0 * sigma * sigma));
 				double finalResult = firstPart * secondPart;
 				//System.out.println("finalResult: " + finalResult);
 
@@ -492,7 +492,7 @@ public class ParticlePosition implements PositionModel {
 			}
 			particles = living;
 			System.out.println(particles.size());
-			System.out.println("WiFi measurment update finished! Resampling...");
+			System.out.println("WiFi/Image update finished! Resampling...");
 			resample();
 		}
 		
@@ -650,7 +650,7 @@ public class ParticlePosition implements PositionModel {
 	}
 
 
-	public double[] getCoordinates() {
+	public double[] getCoords() {
 		mCoords[0] = mCloudAverageState[0];
 		mCoords[1] = mCloudAverageState[1];
 		mCoords[2] = mCloudAverageState[2];
