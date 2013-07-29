@@ -42,7 +42,7 @@ public class ParticlePosition implements PositionModel {
 
 	private ProbabilityMap mWifiProbabilityMap;
 
-	private static final int DEFAULT_PARTICLE_COUNT = 1000;
+	private static final int DEFAULT_PARTICLE_COUNT = 100;
 	private static final double DEFAULT_ALPHA = .99f;
 	private static final double HEADING_SIGMA = (double) (Math.PI * 10f / 180f);
 	private static final double DEFAULT_STEP_LENGTH = .70f;
@@ -322,14 +322,15 @@ public class ParticlePosition implements PositionModel {
 					living.add(newParticle);
 				}
 			}
-			particles = living;
+			particles.clear();
+			particles.addAll(living);
 			System.out.println("No. particles = " + particles.size());
 
 
 			if (particles.size() < 0.65*DEFAULT_PARTICLE_COUNT) {
-				//System.out.println("Too few particles! Resampling...");
+				System.out.println("Too few particles! Resampling...");
 				resample();
-				//System.out.println("After resampling: No. particles = " + particles.size());
+				System.out.println("After resampling: No. particles = " + particles.size());
 			}
 
 			computeCloudAverageState();
@@ -370,7 +371,8 @@ public class ParticlePosition implements PositionModel {
 					living.add(particle);
 				}
 			}
-			particles = living;
+			particles.clear();
+			particles.addAll(living);
 
 			if (particles.size() < 0.65 * mNumberOfParticles) {
 				resample();
@@ -404,8 +406,8 @@ public class ParticlePosition implements PositionModel {
 		double[] state = particle.getState();
 
 		// Gaussian noise: http://www.javamex.com/tutorials/random_numbers/gaussian_distribution_2.shtml
-		double deltaX = (length * Math.sin(hdg + state[2])); //+ ran.nextGaussian() * 0.5;
-		double deltaY = (length * Math.cos(hdg + state[2])); //+ ran.nextGaussian() * 0.5;
+		double deltaX = (length * Math.sin(hdg + state[2])) + ran.nextGaussian() * 0.5;
+		double deltaY = (length * Math.cos(hdg + state[2])) + ran.nextGaussian() * 0.5;
 		Line2D trajectory = new Line2D(state[0], state[1], state[0] + deltaX, state[1] + deltaY);
 
 
@@ -485,12 +487,13 @@ public class ParticlePosition implements PositionModel {
 				newParticle.setWeight((int)(Math.round(particle.getWeight()*finalResult)));
 
 
-				System.out.println("Updated particle weight:" + newParticle.getWeight());
+				//System.out.println("Updated particle weight:" + newParticle.getWeight());
 				if (newParticle.getWeight() >= 1) {
 					living.add(newParticle);
 				}
 			}
-			particles = living;
+			particles.clear();
+			particles.addAll(living);
 			System.out.println(particles.size());
 			System.out.println("WiFi/Image update finished! Resampling...");
 			resample();
@@ -657,6 +660,12 @@ public class ParticlePosition implements PositionModel {
 		mCoords[3] = mCloudAverageState[3];
 		return mCoords;
 	}
+
+
+	public String getCenter() {
+		return mCloudAverageState[0] + " " + mCloudAverageState[1];
+	}
+
 	
 	public double getPrecision() {
 		double sdX = 0.0;
