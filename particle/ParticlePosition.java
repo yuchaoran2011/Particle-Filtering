@@ -402,12 +402,12 @@ public class ParticlePosition implements PositionModel {
 
 		Random ran = new Random();
 
-		//System.out.println("updateParticle(): hdg = " + hdg + ", length = " + lengthModifier);
+		//System.out.println("updateParticle(): hdg = " + hdg + ", length = " + length);
 		double[] state = particle.getState();
 
 		// Gaussian noise: http://www.javamex.com/tutorials/random_numbers/gaussian_distribution_2.shtml
-		double deltaX = (length * Math.sin(hdg + state[2])) + ran.nextGaussian() * 0.5;
-		double deltaY = (length * Math.cos(hdg + state[2])) + ran.nextGaussian() * 0.5;
+		double deltaX = (length * Math.sin(hdg)) + ran.nextGaussian() * 0.5;
+		double deltaY = (length * Math.cos(hdg)) + ran.nextGaussian() * 0.5;
 		Line2D trajectory = new Line2D(state[0], state[1], state[0] + deltaX, state[1] + deltaY);
 
 
