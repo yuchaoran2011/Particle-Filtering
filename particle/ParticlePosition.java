@@ -97,23 +97,7 @@ public class ParticlePosition implements PositionModel {
 
 
 
-	/**
-	 * ParticlePosition model constructor.
-	 * 
-	 * @param numberOfParticles
-	 * @param posX
-	 *            x coordinate of the position
-	 * @param posY
-	 *            y coordinate of the position
-	 * @param sigma
-	 *            standard deviation of the distance from the posX, posY
-	 * @param positionListener
-	 */
-	/*
-	public ParticlePosition(double posX, double posY, double sigma, int area,
-			PositionModelUpdateListener positionListener) {
-		this(posX, posY, sigma, area, positionListener, null);
-	}*/
+
 
 	/**
 	 * ParticlePosition model constructor.
@@ -259,12 +243,6 @@ public class ParticlePosition implements PositionModel {
 
 
 
-	/*
-	@Override
-	public PositionRenderer getRenderer() {
-		return new ParticlePositionRenderer(this);
-	}*/
-
 
 
 	/**
@@ -286,7 +264,6 @@ public class ParticlePosition implements PositionModel {
 	private void adjustStepLengthDistribution() {
 		/*
 		 * for (Particle particle: particles) {
-		 * 
 		 * }
 		 */
 	}
@@ -305,12 +282,9 @@ public class ParticlePosition implements PositionModel {
 	}
 
 
-	/**
-	 * Compute new position of the particle cloud based on a step event.
-	 * 
-	 * @param hdg
-	 * @param length
-	 */
+
+
+
 	public void onStep(double hdg, double length) {
 
 		if (length > -5.0) {
@@ -341,15 +315,10 @@ public class ParticlePosition implements PositionModel {
 	}
 
 
-	/**
-	 * Compute new position of the particle cloud based on a step event.
-	 * 
-	 * @param alpha
-	 * @param hdg
-	 * @param hdgSpread
-	 * @param length
-	 * @param lengthSpread
-	 */
+
+
+
+
 	public void onStep(double alpha, double hdg, double hdgSpread,
 			double length, double lengthSpread) {
 
@@ -387,17 +356,8 @@ public class ParticlePosition implements PositionModel {
 
 
 
-	/**
-	 * Update state of a single particle
-	 * 
-	 * @param particle
-	 *            updated particle
-	 * @param hdg
-	 *            heading in which the particle moves
-	 * @param lengthModifier
-	 *            distance of the particle travel
-	 * @return an updated particle 
-	 */
+
+
 	private Particle updateParticle(Particle particle, double hdg, double length) {
 
 		Random ran = new Random();
@@ -435,11 +395,7 @@ public class ParticlePosition implements PositionModel {
 
 
 
-	/**
-	 * 
-	 * @param particle
-	 * @return
-	 */
+
 	public double getSurvivalProbability(Particle particle) {
 
 		return mWifiProbabilityMap.getProbability(particle.state[0], particle.state[1]);
@@ -448,9 +404,8 @@ public class ParticlePosition implements PositionModel {
 
 
 
-	/**
-	 * Update particle cloud based on a new RSS measurement and image.
-	 */
+
+
 	public void onRssImageUpdate(double sigma, double x, double y) {
 
 		System.out.println("onRssMeasurement()");
@@ -482,7 +437,6 @@ public class ParticlePosition implements PositionModel {
 				double firstPart = 1.0/(Math.sqrt(2.0*Math.PI) * sigma);
 				double secondPart = Math.exp(-result/(2.0 * sigma * sigma));
 				double finalResult = firstPart * secondPart;
-				//System.out.println("finalResult: " + finalResult);
 
 				newParticle.setWeight((int)(Math.round(particle.getWeight()*finalResult)));
 
@@ -508,9 +462,7 @@ public class ParticlePosition implements PositionModel {
 
 
 
-	/**
-	 * Computes average state values of the particle cloud.
-	 */
+
 	private void computeCloudAverageState() {
 
 		mCloudAverageState[0] = mCloudAverageState[1] = mCloudAverageState[2] = mCloudAverageState[3] = 0.0;
@@ -571,7 +523,7 @@ public class ParticlePosition implements PositionModel {
 		}
 		double cumulativeFreq = 0;
 		for (int i=0; i<temp.size(); i++) {
-			cumulativeFreq += temp.get(i).getWeight() / sum;
+			cumulativeFreq += temp.get(i).getWeight() / (double)sum;
 			freq.add(new Double(cumulativeFreq));
 		}
 
@@ -593,14 +545,12 @@ public class ParticlePosition implements PositionModel {
 
 
 
-	/**
-	 * Retrieve the collection of particles.
-	 * 
-	 * @return the collection of particles.
-	 */
+
 	public Collection<Particle> getParticles() {
 		return particles;
 	}
+
+
 
 
 	@Override
