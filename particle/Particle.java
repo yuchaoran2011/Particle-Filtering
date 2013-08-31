@@ -69,6 +69,7 @@ public class Particle implements Cloneable {
 
 	public void setWeight(int weight) {
 		this.weight = weight;
+		state[4] = weight;
 	}
 
 	public double getX() {

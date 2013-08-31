@@ -286,8 +286,51 @@ public class ParticlePosition implements PositionModel {
 
 
 	public void onStep(double hdg, double length) {
+		
+		
+		if (length > 0.0) {
+			System.out.println("onStep(hdg: " + hdg + ", length: " + length + ")\n");
+			HashSet<Particle> living = new HashSet<Particle>(particles.size());
+			for (Particle particle : particles) {
+				Particle newParticle = updateParticle(particle, hdg, length);
+				if (newParticle.getWeight() > 0) {
+					living.add(newParticle);
+				}
+			}
+			if (living.size() > 0.1 * particles.size()) {
+				particles.clear();
+				particles.addAll(living);
+				System.out.println("No. particles = " + particles.size());
+				if (particles.size() < 0.5*DEFAULT_PARTICLE_COUNT) {
+					System.out.println("Too few particles! Resampling...");
+					resample();
+					System.out.println("After resampling: No. particles = " + particles.size());
+				}
+			}
+			else {
+				System.out.println("All particles collided with walls and none was left!");
+				System.out.println("Generating new particles at most recent valid position!");
 
-		if (length > -5.0) {
+				int numberOfParticles = DEFAULT_PARTICLE_COUNT;
+				particles = new HashSet<Particle>(numberOfParticles);
+				while (numberOfParticles > 0) {
+					particles.add(Particle.polarNormalDistr(mCloudAverageState[0], mCloudAverageState[1], 1, 
+							HEADING_DEFLECTION, mHeadingSpread, mStepLength,
+							mStepLengthSpread, DEFAULT_WEIGHT));
+					numberOfParticles--;	
+				}	
+				mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
+			}	
+
+			computeCloudAverageState();
+
+			// adjustStepLengthDistribution();
+			// adjustHeadingDistribution();
+		}
+		
+		
+		/*
+		if (length > 0.0) {
 			System.out.println("onStep(hdg: " + hdg + ", length: " + length + ")\n");
 			HashSet<Particle> living = new HashSet<Particle>(particles.size());
 			for (Particle particle : particles) {
@@ -311,7 +354,7 @@ public class ParticlePosition implements PositionModel {
 
 			// adjustStepLengthDistribution();
 			// adjustHeadingDistribution();
-		}
+		}*/
 	}
 
 
@@ -322,7 +365,7 @@ public class ParticlePosition implements PositionModel {
 	public void onStep(double alpha, double hdg, double hdgSpread,
 			double length, double lengthSpread) {
 
-		if (length > -5.0) {
+		if (length > 0.0) {
 
 			System.out.println("onStep(hdg: " + hdg + ", length: " + length + ", hdgSpread: " + hdgSpread + 
 				", lengthSpread: " + lengthSpread);
@@ -366,8 +409,8 @@ public class ParticlePosition implements PositionModel {
 		double[] state = particle.getState();
 
 		// Gaussian noise: http://www.javamex.com/tutorials/random_numbers/gaussian_distribution_2.shtml
-		double deltaX = (length * Math.sin(hdg)) + ran.nextGaussian() * 0.5;
-		double deltaY = (length * Math.cos(hdg)) + ran.nextGaussian() * 0.5;
+		double deltaX = (length * Math.sin(hdg)); //+ ran.nextGaussian() * 0.4;
+		double deltaY = (length * Math.cos(hdg)); //+ ran.nextGaussian() * 0.4;
 		Line2D trajectory = new Line2D(state[0], state[1], state[0] + deltaX, state[1] + deltaY);
 
 
@@ -408,6 +451,8 @@ public class ParticlePosition implements PositionModel {
 
 	public void onRssImageUpdate(double sigma, double x, double y) {
 
+		//long startTime = System.currentTimeMillis();
+
 		System.out.println("onRssMeasurement()");
 		HashSet<Particle> living = new HashSet<Particle>();
 
@@ -446,16 +491,24 @@ public class ParticlePosition implements PositionModel {
 					living.add(newParticle);
 				}
 			}
-			particles.clear();
-			particles.addAll(living);
-			System.out.println(particles.size());
-			System.out.println("WiFi/Image update finished! Resampling...");
-			resample();
-		}
+			if (living.size() > 0.1 * particles.size()) {
+				particles.clear();
+				particles.addAll(living);
+				System.out.println(particles.size());
+				System.out.println("WiFi/Image update finished! Resampling...");
+				resample();
+				System.out.println("After resampling: No. particles = " + particles.size());
+			}
+			else {
+				System.out.println("WiFi observation would eliminate too many particles! Discarding this WiFi result...");
+			}
+		}	
 		
-		System.out.println("After resampling: No. particles = " + particles.size());
 
 		computeCloudAverageState();
+
+		//long endTime = System.currentTimeMillis();
+		//System.out.println("This WiFi update took " + (endTime - startTime) + " msecs");
 	}
 
 
