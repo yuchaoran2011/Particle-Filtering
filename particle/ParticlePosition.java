@@ -64,6 +64,11 @@ public class ParticlePosition implements PositionModel {
 	private double mHeadingSpread;
 	private boolean mCheckWallsCollisions = true;
 
+
+	private double sumOfAngles = 0, angleOffset = 0;
+	private boolean offsetMode = false;
+
+
 	private ParticleGenerationMode mParticleGeneration = ParticleGenerationMode.GAUSSIAN;
 
 	// private ParticleGenerationMode mParticleGeneration = ParticleGenerationMode.UNIFORM;
@@ -285,11 +290,23 @@ public class ParticlePosition implements PositionModel {
 
 
 
-	public void onStep(double hdg, double length) {
+	public void onStep(double hdg, double length, double diff) {
 		
 		
 		if (length > 0.0) {
 			System.out.println("onStep(hdg: " + hdg + ", length: " + length + ")\n");
+
+			/*
+			if (Math.abs(diff) >= 0.4) {
+				offsetMode = false;
+				sumOfAngles = 0;
+				angleOffset = 0;
+			}
+			else if (offsetMode) {
+				hdg -= angleOffset; 
+				System.out.println("Angle offset: " + angleOffset);
+			}*/
+
 			HashSet<Particle> living = new HashSet<Particle>(particles.size());
 			for (Particle particle : particles) {
 				Particle newParticle = updateParticle(particle, hdg, length);
@@ -297,6 +314,7 @@ public class ParticlePosition implements PositionModel {
 					living.add(newParticle);
 				}
 			}
+
 			if (living.size() > 0.1 * particles.size()) {
 				particles.clear();
 				particles.addAll(living);
@@ -306,20 +324,40 @@ public class ParticlePosition implements PositionModel {
 					resample();
 					System.out.println("After resampling: No. particles = " + particles.size());
 				}
+				//sumOfAngles = 0;
 			}
+
 			else {
 				System.out.println("All particles collided with walls and none was left!");
 				System.out.println("Generating new particles at most recent valid position!");
 
+				//angleOffset = sumOfAngles / (particles.size() - living.size());
+				//offsetMode = true;
+
 				int numberOfParticles = DEFAULT_PARTICLE_COUNT;
 				particles = new HashSet<Particle>(numberOfParticles);
 				while (numberOfParticles > 0) {
-					particles.add(Particle.polarNormalDistr(mCloudAverageState[0], mCloudAverageState[1], 1, 
+					particles.add(Particle.polarNormalDistr(mCloudAverageState[0], mCloudAverageState[1], 0.5, 
 							HEADING_DEFLECTION, mHeadingSpread, mStepLength,
 							mStepLengthSpread, DEFAULT_WEIGHT));
 					numberOfParticles--;	
 				}	
 				mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
+
+				ArrayList<Particle> bad = new ArrayList<Particle>();
+				for (Particle p : particles) {
+					Line2D l1 = new Line2D(mCloudAverageState[0], mCloudAverageState[1], p.getX(), p.getY());
+					Collection<Line2D> walls = mArea.getWallsModel().getWalls();
+					for (Line2D l2 : walls) {
+						if (l2.intersect(l1)) {
+							bad.add(p);
+							mNumberOfParticles--;
+						}
+					}
+				}
+				particles.removeAll(bad);
+				System.out.println(bad.size() + " new particles were removed because they are in invalid regions!");
+				System.out.println(particles.size() + " valid particles remain.");
 			}	
 
 			computeCloudAverageState();
@@ -422,10 +460,11 @@ public class ParticlePosition implements PositionModel {
 				for (Line2D wall: walls) {
 					if (trajectory.intersect(wall)) {
 						//System.out.println("Particle collided with wall and is assigned weight 0!");
+						sumOfAngles += trajectory.angle(wall);
 						mNumberOfParticles--;
 						return particle.copy(0);   // Return a dead particle of weight 0
 					}
-				}
+				} 
 			}
 		}
 
@@ -500,7 +539,18 @@ public class ParticlePosition implements PositionModel {
 				System.out.println("After resampling: No. particles = " + particles.size());
 			}
 			else {
-				System.out.println("WiFi observation would eliminate too many particles! Discarding this WiFi result...");
+				System.out.println("WiFi observation would eliminate too many particles! Regenerating particles at WiFi location!");
+
+				particles.clear();
+				int numberOfParticles = DEFAULT_PARTICLE_COUNT;
+				particles = new HashSet<Particle>(numberOfParticles);
+				while (numberOfParticles > 0) {
+					particles.add(Particle.polarNormalDistr(x, y, 1, 
+							HEADING_DEFLECTION, mHeadingSpread, mStepLength,
+							mStepLengthSpread, DEFAULT_WEIGHT));
+					numberOfParticles--;	
+				}	
+				mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
 			}
 		}	
 		

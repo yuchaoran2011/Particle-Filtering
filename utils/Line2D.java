@@ -85,4 +85,12 @@ public class Line2D implements Serializable {
 				&& (that.minY == that.maxY || that.minY <= pY && pY <= that.maxY);
 	}
 	
+
+	// Used to compute angle between this line and line only when this line and line intersect.
+	// Formula taken from http://www.tpub.com/math2/5.htm
+	public double angle(Line2D line) {
+		double thisSlope = (end.getY() - start.getY()) / (end.getX() - start.getX());
+		double slope = (line.end.getY() - line.start.getY()) / (line.end.getX() - line.start.getX());
+		return Math.atan((thisSlope - slope) / (1 + thisSlope * slope));
+	}
 }
