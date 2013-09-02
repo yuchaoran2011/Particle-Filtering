@@ -296,7 +296,7 @@ public class ParticlePosition implements PositionModel {
 		if (length > 0.0) {
 			System.out.println("onStep(hdg: " + hdg + ", length: " + length + ")\n");
 
-			/*
+			
 			if (Math.abs(diff) >= 0.4) {
 				offsetMode = false;
 				sumOfAngles = 0;
@@ -305,7 +305,7 @@ public class ParticlePosition implements PositionModel {
 			else if (offsetMode) {
 				hdg -= angleOffset; 
 				System.out.println("Angle offset: " + angleOffset);
-			}*/
+			}
 
 			HashSet<Particle> living = new HashSet<Particle>(particles.size());
 			for (Particle particle : particles) {
@@ -324,15 +324,15 @@ public class ParticlePosition implements PositionModel {
 					resample();
 					System.out.println("After resampling: No. particles = " + particles.size());
 				}
-				//sumOfAngles = 0;
+				sumOfAngles = 0;
 			}
 
 			else {
 				System.out.println("All particles collided with walls and none was left!");
 				System.out.println("Generating new particles at most recent valid position!");
 
-				//angleOffset = sumOfAngles / (particles.size() - living.size());
-				//offsetMode = true;
+				angleOffset = sumOfAngles / (particles.size() - living.size());
+				offsetMode = true;
 
 				int numberOfParticles = DEFAULT_PARTICLE_COUNT;
 				particles = new HashSet<Particle>(numberOfParticles);
