@@ -65,8 +65,10 @@ public class ParticlePosition implements PositionModel {
 	private boolean mCheckWallsCollisions = true;
 
 
-	private double sumOfAngles = 0, angleOffset = 0;
+	private double angleOffset = 0;//sumOfAngles = 0, 
 	private boolean offsetMode = false;
+	private Line2D line = null;
+
 
 
 	private ParticleGenerationMode mParticleGeneration = ParticleGenerationMode.GAUSSIAN;
@@ -150,6 +152,9 @@ public class ParticlePosition implements PositionModel {
 
 		mCoords = new double[4];
 		mCloudAverageState = new double[4];
+		mCloudAverageState[0] = x;
+		mCloudAverageState[1] = y;
+		removeInvalidParticles();
 	}
 
 
@@ -294,18 +299,20 @@ public class ParticlePosition implements PositionModel {
 		
 		
 		if (length > 0.0) {
-			System.out.println("onStep(hdg: " + hdg + ", length: " + length + ")\n");
+			System.out.println("onStep(hdg: " + hdg + ", length: " + length);
 
 			
 			if (Math.abs(diff) >= 0.4) {
 				offsetMode = false;
-				sumOfAngles = 0;
+				//sumOfAngles = 0;
+				line = null;
 				angleOffset = 0;
 			}
 			else if (offsetMode) {
 				hdg -= angleOffset; 
 				System.out.println("Angle offset: " + angleOffset);
 			}
+
 
 			HashSet<Particle> living = new HashSet<Particle>(particles.size());
 			for (Particle particle : particles) {
@@ -324,14 +331,17 @@ public class ParticlePosition implements PositionModel {
 					resample();
 					System.out.println("After resampling: No. particles = " + particles.size());
 				}
-				sumOfAngles = 0;
+				//sumOfAngles = 0;
+				line = null;
 			}
 
 			else {
 				System.out.println("All particles collided with walls and none was left!");
 				System.out.println("Generating new particles at most recent valid position!");
 
-				angleOffset = sumOfAngles / (particles.size() - living.size());
+				//angleOffset = sumOfAngles / (particles.size() - living.size());
+				System.out.println(line);
+				angleOffset = Line2D.angle2(hdg, line);
 				offsetMode = true;
 
 				int numberOfParticles = DEFAULT_PARTICLE_COUNT;
@@ -344,20 +354,7 @@ public class ParticlePosition implements PositionModel {
 				}	
 				mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
 
-				ArrayList<Particle> bad = new ArrayList<Particle>();
-				for (Particle p : particles) {
-					Line2D l1 = new Line2D(mCloudAverageState[0], mCloudAverageState[1], p.getX(), p.getY());
-					Collection<Line2D> walls = mArea.getWallsModel().getWalls();
-					for (Line2D l2 : walls) {
-						if (l2.intersect(l1)) {
-							bad.add(p);
-							mNumberOfParticles--;
-						}
-					}
-				}
-				particles.removeAll(bad);
-				System.out.println(bad.size() + " new particles were removed because they are in invalid regions!");
-				System.out.println(particles.size() + " valid particles remain.");
+				removeInvalidParticles();
 			}	
 
 			computeCloudAverageState();
@@ -395,6 +392,25 @@ public class ParticlePosition implements PositionModel {
 		}*/
 	}
 
+
+
+
+	private void removeInvalidParticles() {
+		ArrayList<Particle> bad = new ArrayList<Particle>();
+		for (Particle p : particles) {
+			Line2D l1 = new Line2D(mCloudAverageState[0], mCloudAverageState[1], p.getX(), p.getY());
+			Collection<Line2D> walls = mArea.getWallsModel().getWalls();
+			for (Line2D l2 : walls) {
+				if (l2.intersect(l1)) {
+					bad.add(p);
+					mNumberOfParticles--;
+				}
+			}
+		}
+		particles.removeAll(bad);
+		System.out.println(bad.size() + " new particles were removed because they are in invalid regions!");
+		System.out.println(particles.size() + " valid particles remain.");
+	}
 
 
 
@@ -447,8 +463,8 @@ public class ParticlePosition implements PositionModel {
 		double[] state = particle.getState();
 
 		// Gaussian noise: http://www.javamex.com/tutorials/random_numbers/gaussian_distribution_2.shtml
-		double deltaX = (length * Math.sin(hdg)); //+ ran.nextGaussian() * 0.4;
-		double deltaY = (length * Math.cos(hdg)); //+ ran.nextGaussian() * 0.4;
+		double deltaX = (length * Math.sin(hdg + angleOffset)); //+ ran.nextGaussian() * 0.4;
+		double deltaY = (length * Math.cos(hdg + angleOffset)); //+ ran.nextGaussian() * 0.4;
 		Line2D trajectory = new Line2D(state[0], state[1], state[0] + deltaX, state[1] + deltaY);
 
 
@@ -457,11 +473,18 @@ public class ParticlePosition implements PositionModel {
 			// wall collision
 			if (mCheckWallsCollisions) {
 				Collection<Line2D> walls = mArea.getWallsModel().getWalls();
+
 				for (Line2D wall: walls) {
 					if (trajectory.intersect(wall)) {
 						//System.out.println("Particle collided with wall and is assigned weight 0!");
-						sumOfAngles += trajectory.angle(wall);
+						//sumOfAngles += trajectory.angle(wall);
 						mNumberOfParticles--;
+
+						//System.out.println(line);
+						
+						if (line == null) {
+							line = new Line2D(wall.getX1(), wall.getY1(), wall.getX2(), wall.getY2());
+						}
 						return particle.copy(0);   // Return a dead particle of weight 0
 					}
 				} 
@@ -586,7 +609,7 @@ public class ParticlePosition implements PositionModel {
 			mCloudAverageState[i] /= particles.size();
 		}
 
-		System.out.println("Avg x: " + mCloudAverageState[0] + " Avg y: " + mCloudAverageState[1]);
+		System.out.println("Avg x: " + mCloudAverageState[0] + " Avg y: " + mCloudAverageState[1] + "\n\n");
 
 
 		mBox = new Rectangle(min[0] - 2 * DEFAULT_STEP_LENGTH, min[1] - 2

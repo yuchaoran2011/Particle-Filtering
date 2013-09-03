@@ -90,7 +90,14 @@ public class Line2D implements Serializable {
 	// Formula taken from http://www.tpub.com/math2/5.htm
 	public double angle(Line2D line) {
 		double thisSlope = (end.getY() - start.getY()) / (end.getX() - start.getX());
-		double slope = (line.end.getY() - line.start.getY()) / (line.end.getX() - line.start.getX());
+		double slope = (line.getY2() - line.getY1()) / (line.getX2() - line.getX1());
+		return Math.atan((thisSlope - slope) / (1 + thisSlope * slope));
+	}
+
+
+	public static double angle2(double angleOfFirstLine, Line2D line) {
+		double thisSlope = Math.tan(angleOfFirstLine);
+		double slope = (line.getY2() - line.getY1()) / (line.getX2() - line.getX1());
 		return Math.atan((thisSlope - slope) / (1 + thisSlope * slope));
 	}
 }
