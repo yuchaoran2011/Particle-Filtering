@@ -293,6 +293,18 @@ public class ParticlePosition implements PositionModel {
 
 
 
+	/*
+	public Point2D onePointMultipleSteps(Point2D wifiLocation, double[] hdgHistory, double[] lenHistory) {
+		double wifiX = wifiLocation.getX(), wifiY = wifiLocation.getY();
+		double deltaX, deltaY;
+		for (int i=0; i<hdgHistory.length; i++) {
+			deltaX = (lenHistory[i] * Math.sin(hdgHistory[i]));
+			deltaY = (lenHistory[i] * Math.cos(hdgHistory[i]));
+			Line2D trajectory = new Line2D(wifiX, wifiY, wifiX + deltaX, wifiY + deltaY);
+		}
+	}*/
+
+
 
 
 	public void onStep(double hdg, double length, double diff) {
@@ -562,7 +574,7 @@ public class ParticlePosition implements PositionModel {
 				System.out.println("After resampling: No. particles = " + particles.size());
 			}
 			else {
-				System.out.println("WiFi observation would eliminate too many particles! Regenerating particles at WiFi location!");
+				System.out.println("WiFi observation eliminated too many particles! Regenerating particles at WiFi location!");
 
 				particles.clear();
 				int numberOfParticles = DEFAULT_PARTICLE_COUNT;
