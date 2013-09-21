@@ -69,6 +69,8 @@ public class ParticlePosition implements PositionModel {
 	private boolean offsetMode = false;
 	private Line2D line = null;
 
+	private ArrayList<Line2D> wallCache;
+
 
 
 	private ParticleGenerationMode mParticleGeneration = ParticleGenerationMode.GAUSSIAN;
@@ -100,6 +102,8 @@ public class ParticlePosition implements PositionModel {
 
 		mCoords = new double[4];
 		mCloudAverageState = new double[4];
+
+		wallCache = new ArrayList<Line2D>();
 	}
 
 
@@ -154,6 +158,7 @@ public class ParticlePosition implements PositionModel {
 		mCloudAverageState = new double[4];
 		mCloudAverageState[0] = x;
 		mCloudAverageState[1] = y;
+		wallCache = new ArrayList<Line2D>();
 		removeInvalidParticles();
 	}
 
@@ -409,13 +414,33 @@ public class ParticlePosition implements PositionModel {
 
 	private void removeInvalidParticles() {
 		ArrayList<Particle> bad = new ArrayList<Particle>();
+		outer:
 		for (Particle p : particles) {
 			Line2D l1 = new Line2D(mCloudAverageState[0], mCloudAverageState[1], p.getX(), p.getY());
 			Collection<Line2D> walls = mArea.getWallsModel().getWalls();
+			int numOfWallsChecked = 0;
+			for (Line2D cachedLines: wallCache) {
+				numOfWallsChecked++;
+				if (cachedLines.intersect(l1)) {
+					bad.add(p);
+					mNumberOfParticles--;
+					//System.out.println("numOfWallsChecked: " + numOfWallsChecked);
+					continue outer;
+				}
+			}
 			for (Line2D l2 : walls) {
+				numOfWallsChecked++;
 				if (l2.intersect(l1)) {
 					bad.add(p);
 					mNumberOfParticles--;
+					if (wallCache.size() == 10) {
+						wallCache.set((new Random()).nextInt(10), l2);
+					}
+					else {
+						wallCache.add(l2);
+					}
+					//System.out.println("numOfWallsChecked: " + numOfWallsChecked);
+					break;
 				}
 			}
 		}
@@ -486,17 +511,36 @@ public class ParticlePosition implements PositionModel {
 			if (mCheckWallsCollisions) {
 				Collection<Line2D> walls = mArea.getWallsModel().getWalls();
 
-				for (Line2D wall: walls) {
+				int numOfWallsChecked = 0;
+				for (Line2D wall: wallCache) {
+					numOfWallsChecked++;
 					if (trajectory.intersect(wall)) {
-						//System.out.println("Particle collided with wall and is assigned weight 0!");
 						//sumOfAngles += trajectory.angle(wall);
 						mNumberOfParticles--;
-
-						//System.out.println(line);
 						
 						if (line == null) {
 							line = new Line2D(wall.getX1(), wall.getY1(), wall.getX2(), wall.getY2());
 						}
+						//System.out.println("numOfWallsChecked: " + numOfWallsChecked);
+						return particle.copy(0);   // Return a dead particle of weight 0
+					}
+				} 
+				for (Line2D wall: walls) {
+					numOfWallsChecked++;
+					if (trajectory.intersect(wall)) {
+						//sumOfAngles += trajectory.angle(wall);
+						mNumberOfParticles--;
+						
+						if (line == null) {
+							line = new Line2D(wall.getX1(), wall.getY1(), wall.getX2(), wall.getY2());
+						}
+						if (wallCache.size() == 10) {
+							wallCache.set((new Random()).nextInt(10), wall);
+						}
+						else {
+							wallCache.add(wall);
+						}
+						//System.out.println("numOfWallsChecked: " + numOfWallsChecked);
 						return particle.copy(0);   // Return a dead particle of weight 0
 					}
 				} 
