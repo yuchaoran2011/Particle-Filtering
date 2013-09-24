@@ -411,6 +411,24 @@ public class ParticlePosition implements PositionModel {
 
 
 
+	private boolean coordValid(double x, double y) {
+		/*
+		Line2D line = new Line2D(mCloudAverageState[0], mCloudAverageState[1], x, y);
+		for (Line2D wall: wallCache) {
+			if (wall.intersect(line)) {
+				return false;
+			}
+		}
+		Collection<Line2D> walls = mArea.getWallsModel().getWalls();
+		for (Line2D wall: walls) {
+			if (wall.intersect(line)) {
+				return false;
+			}
+		}*/
+		return true;
+	}
+
+
 
 	private void removeInvalidParticles() {
 		ArrayList<Particle> bad = new ArrayList<Particle>();
@@ -418,18 +436,14 @@ public class ParticlePosition implements PositionModel {
 		for (Particle p : particles) {
 			Line2D l1 = new Line2D(mCloudAverageState[0], mCloudAverageState[1], p.getX(), p.getY());
 			Collection<Line2D> walls = mArea.getWallsModel().getWalls();
-			int numOfWallsChecked = 0;
 			for (Line2D cachedLines: wallCache) {
-				numOfWallsChecked++;
 				if (cachedLines.intersect(l1)) {
 					bad.add(p);
 					mNumberOfParticles--;
-					//System.out.println("numOfWallsChecked: " + numOfWallsChecked);
 					continue outer;
 				}
 			}
 			for (Line2D l2 : walls) {
-				numOfWallsChecked++;
 				if (l2.intersect(l1)) {
 					bad.add(p);
 					mNumberOfParticles--;
@@ -439,7 +453,6 @@ public class ParticlePosition implements PositionModel {
 					else {
 						wallCache.add(l2);
 					}
-					//System.out.println("numOfWallsChecked: " + numOfWallsChecked);
 					break;
 				}
 			}
@@ -496,7 +509,6 @@ public class ParticlePosition implements PositionModel {
 
 		Random ran = new Random();
 
-		//System.out.println("updateParticle(): hdg = " + hdg + ", length = " + length);
 		double[] state = particle.getState();
 
 		// Gaussian noise: http://www.javamex.com/tutorials/random_numbers/gaussian_distribution_2.shtml
@@ -509,28 +521,21 @@ public class ParticlePosition implements PositionModel {
 
 			// wall collision
 			if (mCheckWallsCollisions) {
-				Collection<Line2D> walls = mArea.getWallsModel().getWalls();
-
-				int numOfWallsChecked = 0;
 				for (Line2D wall: wallCache) {
-					numOfWallsChecked++;
 					if (trajectory.intersect(wall)) {
 						//sumOfAngles += trajectory.angle(wall);
-						mNumberOfParticles--;
-						
+						mNumberOfParticles--;	
 						if (line == null) {
 							line = new Line2D(wall.getX1(), wall.getY1(), wall.getX2(), wall.getY2());
 						}
-						//System.out.println("numOfWallsChecked: " + numOfWallsChecked);
 						return particle.copy(0);   // Return a dead particle of weight 0
 					}
 				} 
+				Collection<Line2D> walls = mArea.getWallsModel().getWalls();
 				for (Line2D wall: walls) {
-					numOfWallsChecked++;
 					if (trajectory.intersect(wall)) {
 						//sumOfAngles += trajectory.angle(wall);
 						mNumberOfParticles--;
-						
 						if (line == null) {
 							line = new Line2D(wall.getX1(), wall.getY1(), wall.getX2(), wall.getY2());
 						}
@@ -540,7 +545,6 @@ public class ParticlePosition implements PositionModel {
 						else {
 							wallCache.add(wall);
 						}
-						//System.out.println("numOfWallsChecked: " + numOfWallsChecked);
 						return particle.copy(0);   // Return a dead particle of weight 0
 					}
 				} 
@@ -558,86 +562,75 @@ public class ParticlePosition implements PositionModel {
 
 
 	public double getSurvivalProbability(Particle particle) {
-
 		return mWifiProbabilityMap.getProbability(particle.state[0], particle.state[1]);
-
 	}
 
 
 
 
 
-	public void onRssImageUpdate(double sigma, double x, double y) {
+	public void onRssUpdate(double sigma, double x, double y) {
 
-		//long startTime = System.currentTimeMillis();
-
-		System.out.println("onRssMeasurement()");
+		System.out.println("onRssUpdate()");
 		HashSet<Particle> living = new HashSet<Particle>();
 
+		if (coordValid(x, y)) {
+			if (particles.isEmpty()) {
+				System.out.println("Particles don't exist! Regenerating particles based on WiFi location");
 
-		if (particles.isEmpty()) {
-			System.out.println("Particles don't exist! Regenerating particles based on WiFi location");
-
-			int numberOfParticles = DEFAULT_PARTICLE_COUNT;
-			particles = new HashSet<Particle>(numberOfParticles);
-			while (numberOfParticles > 0) {
-				particles.add(Particle.polarNormalDistr(x, y, 1, 
-							HEADING_DEFLECTION, mHeadingSpread, mStepLength,
-							mStepLengthSpread, DEFAULT_WEIGHT));
-				numberOfParticles--;	
-				}	
-			mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
-		}
-
-
-		else {
-
-			for (Particle particle : particles) {
-				Particle newParticle = particle.copy(particle.getWeight());
-
-
-				double result = (particle.getX()-x)*(particle.getX()-x)+(particle.getY()-y)*(particle.getY()-y);
-				double firstPart = 1.0/(Math.sqrt(2.0*Math.PI) * sigma);
-				double secondPart = Math.exp(-result/(2.0 * sigma * sigma));
-				double finalResult = firstPart * secondPart;
-
-				newParticle.setWeight((int)(Math.round(particle.getWeight()*finalResult)));
-
-
-				//System.out.println("Updated particle weight:" + newParticle.getWeight());
-				if (newParticle.getWeight() >= 1) {
-					living.add(newParticle);
-				}
-			}
-			if (living.size() > 0.1 * particles.size()) {
-				particles.clear();
-				particles.addAll(living);
-				System.out.println(particles.size());
-				System.out.println("WiFi/Image update finished! Resampling...");
-				resample();
-				System.out.println("After resampling: No. particles = " + particles.size());
-			}
-			else {
-				System.out.println("WiFi observation eliminated too many particles! Regenerating particles at WiFi location!");
-
-				particles.clear();
 				int numberOfParticles = DEFAULT_PARTICLE_COUNT;
 				particles = new HashSet<Particle>(numberOfParticles);
 				while (numberOfParticles > 0) {
 					particles.add(Particle.polarNormalDistr(x, y, 1, 
-							HEADING_DEFLECTION, mHeadingSpread, mStepLength,
-							mStepLengthSpread, DEFAULT_WEIGHT));
+								HEADING_DEFLECTION, mHeadingSpread, mStepLength,
+								mStepLengthSpread, DEFAULT_WEIGHT));
 					numberOfParticles--;	
-				}	
+					}	
 				mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
 			}
-		}	
-		
 
-		computeCloudAverageState();
+			else {
+				for (Particle particle : particles) {
+					Particle newParticle = particle.copy(particle.getWeight());
 
-		//long endTime = System.currentTimeMillis();
-		//System.out.println("This WiFi update took " + (endTime - startTime) + " msecs");
+
+					double result = (particle.getX()-x)*(particle.getX()-x)+(particle.getY()-y)*(particle.getY()-y);
+					double firstPart = 1.0/(Math.sqrt(2.0*Math.PI) * sigma);
+					double secondPart = Math.exp(-result/(2.0 * sigma * sigma));
+					double finalResult = firstPart * secondPart;
+
+					newParticle.setWeight((int)(Math.round(particle.getWeight()*finalResult)));
+
+					if (newParticle.getWeight() >= 1) {
+						living.add(newParticle);
+					}
+				}
+				if (living.size() > 0.1 * particles.size()) {
+					particles.clear();
+					particles.addAll(living);
+					System.out.println(particles.size());
+					System.out.println("WiFi/Image update finished! Resampling...");
+					resample();
+					System.out.println("After resampling: No. particles = " + particles.size());
+				}
+				else {
+					System.out.println("WiFi observation eliminated too many particles! Regenerating particles at WiFi location!");
+
+					particles.clear();
+					int numberOfParticles = DEFAULT_PARTICLE_COUNT;
+					particles = new HashSet<Particle>(numberOfParticles);
+					while (numberOfParticles > 0) {
+						particles.add(Particle.polarNormalDistr(x, y, 1, 
+								HEADING_DEFLECTION, mHeadingSpread, mStepLength,
+								mStepLengthSpread, DEFAULT_WEIGHT));
+						numberOfParticles--;	
+					}	
+					mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
+				}
+			}	
+			
+			computeCloudAverageState();
+		}
 	}
 
 
