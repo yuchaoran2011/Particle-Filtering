@@ -26,7 +26,7 @@ public class Particle implements Cloneable {
 
 	// polar version
 	public static Particle polarNormalDistr(double meanX, double meanY,
-			double sigma, double headingDeflection, double headingSpread,
+			double sigma, double headingSpread,
 			double stepLength, double stepSpread, int weight) {
 
 		double angle = 2 * Math.PI * Math.random();
@@ -35,7 +35,7 @@ public class Particle implements Cloneable {
 		double x = meanX + (distance * Math.cos(angle));
 		double y = meanY + (distance * Math.sin(angle));
 		
-		double randomHeading = headingDeflection + headingSpread * NormalDistribution.inverse(Math.random());
+		double randomHeading = headingSpread * NormalDistribution.inverse(Math.random());
 		double randomStepLength = stepLength + stepSpread * NormalDistribution.inverse(Math.random());
 		return new Particle(x, y, randomHeading, randomStepLength, weight);
 	}
@@ -43,14 +43,14 @@ public class Particle implements Cloneable {
 
 
 	public static Particle evenSpread(double meanX, double meanY, double sizeX, double sizeY,
-			double headingDeflection, double headingSpread,
+			double headingSpread,
 			double stepLength, double stepSpread, int weight) {
 		
 		
 		double x = meanX + ((Math.random() - 0.5) *  sizeX);
 		double y = meanY + ((Math.random() - 0.5) * sizeY);
 		
-		double randomHeading = headingDeflection + headingSpread * NormalDistribution.inverse(Math.random());
+		double randomHeading = headingSpread * NormalDistribution.inverse(Math.random());
 		double randomStepLength = stepLength + stepSpread * NormalDistribution.inverse(Math.random());
 		
 		return new Particle(x, y, randomHeading, randomStepLength, weight);
