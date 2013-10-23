@@ -138,7 +138,7 @@ public class ParticlePosition implements PositionModel {
 
 
 
-	public void onStep(double hdg, double length, double diff) {		
+	public void onStep(double hdg, double length) {		
 		if (length > 0.0) {
 			System.out.println("onStep(hdg: " + hdg + ", length: " + length);
 
@@ -295,8 +295,8 @@ public class ParticlePosition implements PositionModel {
 
 
 
-	public void onRssUpdate(double sigma, double x, double y) {
-		System.out.println("onRssUpdate()");
+	public void onRssImageUpdate(double sigma, double x, double y) {
+		System.out.println("onRssImageUpdate()");
 		HashSet<Particle> living = new HashSet<Particle>();
 		if (particles.isEmpty()) {
 			System.out.println("Particles don't exist! Regenerating particles based on WiFi location");
@@ -335,7 +335,7 @@ public class ParticlePosition implements PositionModel {
 				System.out.println("After resampling: No. particles = " + particles.size());
 			}
 			else {
-				System.out.println("WiFi observation eliminated too many particles! Regenerating particles at WiFi location!");
+				System.out.println("Too many particles were eliminated! Regenerating particles at WiFi location!");
 
 				particles.clear();
 				int numberOfParticles = DEFAULT_PARTICLE_COUNT;
@@ -446,13 +446,6 @@ public class ParticlePosition implements PositionModel {
 				+ String.format("%.2f", mCoords[2]) + ", step:"
 				+ String.format("%.2f", mCoords[3]);
 	}
-
-
-
-
-	private double mLastNotifiedHeading;
-	private static final double HEADING_DIFF_THRESHOLD = (double) (5f / 180f * Math.PI);
-
 
 
 
