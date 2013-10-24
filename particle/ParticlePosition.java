@@ -183,15 +183,14 @@ public class ParticlePosition implements PositionModel {
 	}
 
 
-
 	private void removeInvalidParticles() {
 		ArrayList<Particle> bad = new ArrayList<Particle>();
 		outer:
 		for (Particle p : particles) {
 			Line2D l1 = new Line2D(mCloudAverageState[0], mCloudAverageState[1], p.getX(), p.getY());
 			Collection<Line2D> walls = mArea.getWallsModel().getWalls();
-			for (Line2D cachedLines: wallCache) {
-				if (cachedLines.intersect(l1)) {
+			for (Line2D cachedLine: wallCache) {
+				if (cachedLine.intersect(l1)) {
 					bad.add(p);
 					mNumberOfParticles--;
 					continue outer;
@@ -207,7 +206,6 @@ public class ParticlePosition implements PositionModel {
 					else {
 						wallCache.add(l2);
 					}
-					break;
 				}
 			}
 		}
@@ -215,7 +213,6 @@ public class ParticlePosition implements PositionModel {
 		System.out.println(bad.size() + " new particles were removed because they are in invalid regions!");
 		System.out.println(particles.size() + " valid particles remain.");
 	}
-
 
 
 
@@ -249,8 +246,6 @@ public class ParticlePosition implements PositionModel {
 			computeCloudAverageState();
 		}
 	}
-
-
 
 
 
@@ -355,7 +350,6 @@ public class ParticlePosition implements PositionModel {
 
 
 
-
 	private void computeCloudAverageState() {
 		mCloudAverageState[0] = mCloudAverageState[1] = mCloudAverageState[2] = mCloudAverageState[3] = 0.0;
 		double[] max = new double[] { Double.NEGATIVE_INFINITY,
@@ -365,13 +359,13 @@ public class ParticlePosition implements PositionModel {
 				Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY,
 				Double.POSITIVE_INFINITY };
 		for (Particle particle : particles) {
-			for (int i = 0; i < particle.getState().length-1; i++) {
+			for (int i = 0; i < particle.getState().length-1; ++i) {
 				mCloudAverageState[i] += particle.getState()[i];
 				min[i] = Math.min(min[i], particle.getState()[i]);
 				max[i] = Math.max(max[i], particle.getState()[i]);
 			}
 		}
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 4; ++i) {
 			mCloudAverageState[i] /= particles.size();
 		}
 
@@ -408,7 +402,7 @@ public class ParticlePosition implements PositionModel {
 			sum += p.getWeight();
 		}
 		double cumulativeFreq = 0;
-		for (int i=0; i<temp.size(); i++) {
+		for (int i=0; i<temp.size(); ++i) {
 			cumulativeFreq += temp.get(i).getWeight() / (double)sum;
 			freq.add(new Double(cumulativeFreq));
 		}
@@ -416,8 +410,8 @@ public class ParticlePosition implements PositionModel {
 		Random generator = new Random();
 		double r = generator.nextDouble();
 
-		for (int i=0; i<DEFAULT_PARTICLE_COUNT; i++) {
-			for (int j=0; j<temp.size(); j++) {
+		for (int i=0; i<DEFAULT_PARTICLE_COUNT; ++i) {
+			for (int j=0; j<temp.size(); ++j) {
 				if (r >= freq.get(j)) {
 					particles.add(temp.get(j).copy(DEFAULT_WEIGHT));
 					mNumberOfParticles++;
@@ -429,12 +423,9 @@ public class ParticlePosition implements PositionModel {
 	}
 
 
-
-
-
-	public Collection<Particle> getParticles() { return particles; }
-
-
+	public Collection<Particle> getParticles() { 
+		return particles; 
+	}
 
 
 	@Override
@@ -446,7 +437,6 @@ public class ParticlePosition implements PositionModel {
 				+ String.format("%.2f", mCoords[2]) + ", step:"
 				+ String.format("%.2f", mCoords[3]);
 	}
-
 
 
 	public double[] getCoords() {
