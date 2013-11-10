@@ -7,18 +7,13 @@ import pf.distr.NormalDistribution;
 
 public class Particle implements Cloneable {
 
-	double[] state; // x, y, heading, stride length, weight
-	double x, y;
-	double hdg, stepLength;
-	int weight; 
+	private double x, y;
+	private int weight; 
 
 	
-	public Particle(double posX, double posY, double heading, double stepLength, int weight) {
-		state = new double[] { posX, posY, heading, stepLength, weight };
+	public Particle(double posX, double posY, int weight) {
 		x = posX;
 		y = posY;
-		hdg = heading;
-		this.stepLength = stepLength; 
 		this.weight = weight;
 	}
 
@@ -26,40 +21,23 @@ public class Particle implements Cloneable {
 
 	// polar version
 	public static Particle polarNormalDistr(double meanX, double meanY,
-			double sigma, double headingSpread,
-			double stepLength, double stepSpread, int weight) {
+			double sigma, int weight) {
 
 		double angle = 2 * Math.PI * Math.random();
 		double distance = sigma * NormalDistribution.inverse(Math.random());
 		
 		double x = meanX + (distance * Math.cos(angle));
 		double y = meanY + (distance * Math.sin(angle));
-		
-		double randomHeading = headingSpread * NormalDistribution.inverse(Math.random());
-		double randomStepLength = stepLength + stepSpread * NormalDistribution.inverse(Math.random());
-		return new Particle(x, y, randomHeading, randomStepLength, weight);
+
+		return new Particle(x, y, weight);
 	}
 
 
 
-	public static Particle evenSpread(double meanX, double meanY, double sizeX, double sizeY,
-			double headingSpread,
-			double stepLength, double stepSpread, int weight) {
-		
-		
+	public static Particle evenSpread(double meanX, double meanY, double sizeX, double sizeY, int weight) {	
 		double x = meanX + ((Math.random() - 0.5) *  sizeX);
-		double y = meanY + ((Math.random() - 0.5) * sizeY);
-		
-		double randomHeading = headingSpread * NormalDistribution.inverse(Math.random());
-		double randomStepLength = stepLength + stepSpread * NormalDistribution.inverse(Math.random());
-		
-		return new Particle(x, y, randomHeading, randomStepLength, weight);
-	}
-
-
-
-	public double[] getState() {
-		return state;
+		double y = meanY + ((Math.random() - 0.5) * sizeY);	
+		return new Particle(x, y, weight);
 	}
 
 
@@ -69,7 +47,6 @@ public class Particle implements Cloneable {
 
 	public void setWeight(int weight) {
 		this.weight = weight;
-		state[4] = weight;
 	}
 
 	public double getX() {
@@ -80,16 +57,12 @@ public class Particle implements Cloneable {
 		return y;
 	}
 
-
-
 	public String toString() {
-		return "particle(" + Arrays.toString(state) + ")";
+		return "particle: x: " + x + " y: " + y + " weight: " + weight;
 	}
 
-
-
-	// Can be used to construct a nearly dead particle (a particle that just crossed a wall).
+	// Used to construct a nearly dead particle (a particle that just crossed a wall).
 	public Particle copy(int weight) {
-		return new Particle(state[0], state[1], state[2], state[3], weight);
+		return new Particle(x, y, weight);
 	}
 }
