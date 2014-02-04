@@ -7,13 +7,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-import pf.utils.Line2D;
+import pf.utils.Line;
 
 public class SimpleLineListReader {
 
-	ArrayList<Line2D> mLines;
+	ArrayList<Line> mLines;
 	
-	public ArrayList<Line2D> readWalls(String filename) {
+	public ArrayList<Line> readWalls(String filename) {
 		
 		//Log.d(TAG, "readWalls(filename = " + filename + ")");
 		File inputFile = new File(filename); 
@@ -23,7 +23,7 @@ public class SimpleLineListReader {
 			inputFile = new File(root, filename);*/
 		}
 		
-		mLines = new ArrayList<Line2D>();
+		mLines = new ArrayList<Line>();
 		
 		BufferedReader inputStream = null;
 		try {
@@ -38,7 +38,7 @@ public class SimpleLineListReader {
 					double y1 = Double.valueOf(coords[1]);
 					double x2 = Double.valueOf(coords[2]);
 					double y2 = Double.valueOf(coords[3]);
-					mLines.add(new Line2D(x1, y1, x2, y2));
+					mLines.add(new Line(x1, y1, x2, y2));
 				}
 			}
 			

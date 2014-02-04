@@ -7,7 +7,7 @@ public class Rectangle implements Serializable{
 	
 	// private static final String TAG = "Rectangle";
 	public double left, right, top, bottom;
-	private Line2D leftSide, rightSide, topSide, bottomSide;
+	private Line leftSide, rightSide, topSide, bottomSide;
 
 	public Rectangle() {
 		left = Double.POSITIVE_INFINITY;
@@ -31,10 +31,10 @@ public class Rectangle implements Serializable{
 		this.right = Math.max(x1, x2);
 		this.bottom = Math.max(y1, y2);
 		
-		leftSide = new Line2D(left, top, left, bottom);
-		rightSide = new Line2D(right, top, right, bottom);
-		topSide = new Line2D(left, top, right, top);
-		bottomSide = new Line2D(left, bottom, right, bottom);
+		leftSide = new Line(left, top, left, bottom);
+		rightSide = new Line(right, top, right, bottom);
+		topSide = new Line(left, top, right, top);
+		bottomSide = new Line(left, bottom, right, bottom);
 	}
 	
 	public void consolidate() {
@@ -43,10 +43,10 @@ public class Rectangle implements Serializable{
 		this.right = Math.max(left, right);
 		this.bottom = Math.max(top, bottom);
 		
-		leftSide = new Line2D(left, top, left, bottom);
-		rightSide = new Line2D(right, top, right, bottom);
-		topSide = new Line2D(left, top, right, top);
-		bottomSide = new Line2D(left, bottom, right, bottom);
+		leftSide = new Line(left, top, left, bottom);
+		rightSide = new Line(right, top, right, bottom);
+		topSide = new Line(left, top, right, top);
+		bottomSide = new Line(left, bottom, right, bottom);
 	}
 
 	public double getX1() {
@@ -100,7 +100,7 @@ public class Rectangle implements Serializable{
 		return hasIntersection(point.x, point.y);
 	}
 
-	public boolean hasIntersection(Line2D line) {
+	public boolean hasIntersection(Line line) {
 		
 		/*
 		boolean b1 = hasIntersection(line.getX1(), line.getY1());

@@ -3,7 +3,7 @@ package pf.floors;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import pf.utils.Line2D;
+import pf.utils.Line;
 
 /**
  * AreaBuilder class. Responsible for incremental construction area parts and
@@ -12,8 +12,8 @@ import pf.utils.Line2D;
 public class AreaBuilder {
 
 	private Area area;
-	private Collection<Line2D> mWalls;
-	private Collection<Line2D> mStairs;
+	private Collection<Line> mWalls;
+	private Collection<Line> mStairs;
 
 	/**
 	 * AreaBuilder constructor
@@ -21,7 +21,7 @@ public class AreaBuilder {
 	 */
 	public AreaBuilder() {
 		area = null;
-		mWalls = new ArrayList<Line2D>();
+		mWalls = new ArrayList<Line>();
 	}
 
 	/**
@@ -82,15 +82,15 @@ public class AreaBuilder {
 	 * @param scaleX
 	 * @param scaleY
 	 */
-	private void scaleLines(Collection<Line2D> lines, double originX,
+	private void scaleLines(Collection<Line> lines, double originX,
 			double originY, double scaleX, double scaleY) {
-		ArrayList<Line2D> otherLines = new ArrayList<Line2D>();
-		for (Line2D wall : lines) {
+		ArrayList<Line> otherLines = new ArrayList<Line>();
+		for (Line wall : lines) {
 			double x1 = scaleX * ((double) wall.getX1() + originX);
 			double y1 = scaleY * ((double) wall.getY1() + originY);
 			double x2 = scaleX * ((double) wall.getX2() + originX);
 			double y2 = scaleY * ((double) wall.getY2() + originY);
-			otherLines.add(new Line2D(x1, y1, x2, y2));
+			otherLines.add(new Line(x1, y1, x2, y2));
 		}
 		lines.clear();
 		lines.addAll(otherLines);

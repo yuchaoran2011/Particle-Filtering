@@ -19,7 +19,7 @@ public class ParticlePosition {
 	private double mPositionSigma = 1.0f;
 	private int mNumberOfParticles;
 
-	private ArrayList<Line2D> wallCache;
+	private ArrayList<Line> wallCache;
 
 	public enum ParticleGenerationMode { GAUSSIAN, UNIFORM }
 	private ParticleGenerationMode mParticleGeneration = ParticleGenerationMode.GAUSSIAN;
@@ -40,7 +40,7 @@ public class ParticlePosition {
 		mCloudAverageState = new double[2];
 		mCloudAverageState[0] = x;
 		mCloudAverageState[1] = y;
-		wallCache = new ArrayList<Line2D>();
+		wallCache = new ArrayList<Line>();
 		removeInvalidParticles();
 	}
 
@@ -76,12 +76,12 @@ public class ParticlePosition {
 					living.add(newParticle);
 				}
 			}
-			if (living.size() > 0.1 * particles.size()) {
-				removeInvalidParticles();
+			if (living.size() > 0.1 * particles.size()) { 
+				
 				particles.clear();
 				particles.addAll(living);
 				System.out.println("No. particles = " + particles.size());
-				if (particles.size() < 0.5*DEFAULT_PARTICLE_COUNT) {
+				if (particles.size() < 0.5*DEFAULT_PARTICLE_COUNT) {// condition
 					System.out.println("Too few particles! Resampling...");
 					resample();
 					System.out.println("After resampling: No. particles = " + particles.size());
@@ -90,6 +90,7 @@ public class ParticlePosition {
 			else {
 				System.out.println("All particles collided with walls and none was left!");
 				System.out.println("Generating new particles at most recent valid position!");
+
 
 				int numberOfParticles = DEFAULT_PARTICLE_COUNT;
 				particles = new HashSet<Particle>(numberOfParticles);
@@ -109,16 +110,16 @@ public class ParticlePosition {
 		ArrayList<Particle> bad = new ArrayList<Particle>();
 		outer:
 		for (Particle p : particles) {
-			Line2D l1 = new Line2D(mCloudAverageState[0], mCloudAverageState[1], p.getX(), p.getY());
-			Collection<Line2D> walls = mArea.getWallsModel().getWalls();
-			for (Line2D cachedLine: wallCache) {
+			Line l1 = new Line(mCloudAverageState[0], mCloudAverageState[1], p.getX(), p.getY());
+			Collection<Line> walls = mArea.getWallsModel().getWalls();
+			for (Line cachedLine: wallCache) {
 				if (cachedLine.intersect(l1)) {
 					bad.add(p);
 					mNumberOfParticles--;
 					continue outer;
 				}
 			}
-			for (Line2D l2 : walls) {
+			for (Line l2 : walls) {
 				if (l2.intersect(l1)) {
 					bad.add(p);
 					mNumberOfParticles--;
@@ -138,6 +139,7 @@ public class ParticlePosition {
 
 
 
+	// Bug: Particles could potentially get across walls
 	private Particle updateParticle(Particle particle, double hdg, double length) {
 		Random ran = new Random();
 
@@ -145,18 +147,18 @@ public class ParticlePosition {
 		double deltaX = length * Math.sin(hdg); //+ ran.nextGaussian() * 0.4;
 		double deltaY = length * Math.cos(hdg); //+ ran.nextGaussian() * 0.4;
 		double oldX=particle.getX(), oldY=particle.getY();
-		Line2D trajectory = new Line2D(oldX, oldY, oldX + deltaX, oldY + deltaY);
+		Line trajectory = new Line(oldX, oldY, oldX + deltaX, oldY + deltaY);
 
-		if (mArea != null) {
+		if (mArea != null) {// cache speedup
 			// wall collision
-			for (Line2D wall: wallCache) {
+			for (Line wall: wallCache) {
 				if (trajectory.intersect(wall)) {
 					mNumberOfParticles--;	
 					return particle.copy(0);   // Return a dead particle of weight 0
 				}
 			} 
-			Collection<Line2D> walls = mArea.getWallsModel().getWalls();
-			for (Line2D wall: walls) {
+			Collection<Line> walls = mArea.getWallsModel().getWalls();
+			for (Line wall: walls) {
 				if (trajectory.intersect(wall)) {
 					mNumberOfParticles--;
 					if (wallCache.size() == 10) {
@@ -177,7 +179,7 @@ public class ParticlePosition {
 	public void onRssImageUpdate(double sigma, double x, double y) {
 		System.out.println("onRssImageUpdate()");
 		HashSet<Particle> living = new HashSet<Particle>();
-		if (particles.isEmpty()) {
+		if (particles.isEmpty()) { // Ever true?
 			System.out.println("Particles don't exist! Regenerating particles based on WiFi location");
 
 			int numberOfParticles = DEFAULT_PARTICLE_COUNT;
@@ -208,7 +210,7 @@ public class ParticlePosition {
 				particles.addAll(living);
 				System.out.println(particles.size());
 				System.out.println("WiFi/Image update finished! Resampling...");
-				resample();
+				resample(); // Needed?
 				System.out.println("After resampling: No. particles = " + particles.size());
 			}
 			else {
@@ -222,6 +224,7 @@ public class ParticlePosition {
 					numberOfParticles--;	
 				}	
 				mNumberOfParticles = DEFAULT_PARTICLE_COUNT;
+				removeInvalidParticles();
 			}
 		}	
 	}
@@ -233,6 +236,7 @@ public class ParticlePosition {
 		mCloudAverageState[0] = mCloudAverageState[1] = 0.0;
 		int totalWeight = 0;
 		for (Particle particle : particles) {
+			// Check for weights 1
 			mCloudAverageState[0] += particle.getX() * particle.getWeight();
 			mCloudAverageState[1] += particle.getY() * particle.getWeight();
 			totalWeight += particle.getWeight();

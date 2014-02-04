@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import pf.utils.Grid;
-import pf.utils.Line2D;
+import pf.utils.Line;
 import pf.utils.Point2D;
 import pf.utils.Polygon;
 import pf.utils.Rectangle;
@@ -17,19 +17,19 @@ import pf.utils.RectangleGrid;
 
 public class AreaLayerModel implements Serializable {
 	
-	private Set<Line2D> completeSet, workingSet, displaySet;
-	private static final Set<Line2D> emptySet = new HashSet<Line2D>();
+	private Set<Line> completeSet, workingSet, displaySet;
+	private static final Set<Line> emptySet = new HashSet<Line>();
 	private double gridSize;
 	private Point2D motionVector;
 	private Rectangle mBoundingBox;
 	private Collection<Point2D> collisionSet;
 	private int mHalfWindowSize;
-	private HashMap<Point2D, Set<Line2D>> bucketMap;
+	private HashMap<Point2D, Set<Line>> bucketMap;
 
 	public AreaLayerModel() {
-		completeSet = new HashSet<Line2D>();
-		workingSet = new HashSet<Line2D>();
-		displaySet = new HashSet<Line2D>();
+		completeSet = new HashSet<Line>();
+		workingSet = new HashSet<Line>();
+		displaySet = new HashSet<Line>();
 		mBoundingBox = new Rectangle();
 		collisionSet = null;
 		mHalfWindowSize = 0;
@@ -37,14 +37,14 @@ public class AreaLayerModel implements Serializable {
 		bucketMap = null;
 	}
 
-	public boolean addWall(Line2D wall) {
+	public boolean addWall(Line wall) {
 		return completeSet.add(wall);
 	}
 
 
 	public String toString() {
 		String result = "";
-		for (Line2D line: completeSet) {
+		for (Line line: completeSet) {
 			result += (line + "\n");
 		}
 		return result;
@@ -70,7 +70,7 @@ public class AreaLayerModel implements Serializable {
 	public void computeBuckets(float gridSize) {
 		/*
 		ArrayList<Double> xCoords = new ArrayList<Double>(), yCoords = new ArrayList<Double>();
-		for (Line2D line : completeSet) {
+		for (Line line : completeSet) {
 			xCoords.add(line.getX1());
 			xCoords.add(line.getX2());
 			yCoords.add(line.getY1());
@@ -81,11 +81,11 @@ public class AreaLayerModel implements Serializable {
 		
 		long start = System.nanoTime();
 
-		bucketMap = new HashMap<Point2D, Set<Line2D>>();
+		bucketMap = new HashMap<Point2D, Set<Line>>();
 		Rectangle bucketBox = new Rectangle();
 		Rectangle box = new Rectangle();
 
-		for (Line2D line : completeSet) {
+		for (Line line : completeSet) {
 
 			box.set(Math.min(line.getX1(), line.getX2()),
 					Math.min(line.getY1(), line.getY2()),
@@ -100,7 +100,7 @@ public class AreaLayerModel implements Serializable {
 				
 				if (bucketBox.hasIntersection(line)) {
 					if (!bucketMap.containsKey(bucket))
-						bucketMap.put(bucket, new HashSet<Line2D>());
+						bucketMap.put(bucket, new HashSet<Line>());
 					bucketMap.get(bucket).add(line);
 				}	
 			}
@@ -123,28 +123,28 @@ public class AreaLayerModel implements Serializable {
 		return Collections.unmodifiableCollection(bucketMap.keySet()); 
 	}
 
-	public HashMap<Point2D, Set<Line2D>> getBucketMap() {
+	public HashMap<Point2D, Set<Line>> getBucketMap() {
 		return bucketMap;
 	}
 
 	public boolean addWall(double x1, double y1, double x2, double y2) {
-		return completeSet.add(new Line2D(x1, y1, x2, y2));
+		return completeSet.add(new Line(x1, y1, x2, y2));
 	}
 
-	public Collection<Line2D> getCompleteSet() {
+	public Collection<Line> getCompleteSet() {
 		return Collections.unmodifiableCollection(completeSet);
 	}
 
-	public Set<Line2D> getWalls() {
+	public Set<Line> getWalls() {
 		return completeSet;
 	}
 
-	public Collection<Line2D> getWorkingSet() {
+	public Collection<Line> getWorkingSet() {
 		return Collections.unmodifiableCollection(workingSet);
 	}
 
 	private Point2D tmpBucket = new Point2D(0,0);
-	public Collection<Line2D> getWorkingSet(double x, double y) {
+	public Collection<Line> getWorkingSet(double x, double y) {
 		if (bucketMap == null) {
 			return Collections.unmodifiableCollection(workingSet);
 		}
@@ -155,7 +155,7 @@ public class AreaLayerModel implements Serializable {
 		return Collections.unmodifiableCollection(bucketMap.get(tmpBucket));
 	}
 
-	public Collection<Line2D> getDisplaySet() {
+	public Collection<Line> getDisplaySet() {
 		return Collections.unmodifiableCollection(displaySet);
 	}
 
@@ -172,7 +172,7 @@ public class AreaLayerModel implements Serializable {
 		// TODO: setBoundingBox(box, workingSet);
 	}
 	
-	private void setBoundingBox(Rectangle box, Set<Line2D> wallSet) {
+	private void setBoundingBox(Rectangle box, Set<Line> wallSet) {
 
 		if (box != null) {
 			mBoundingBox.set(box);
@@ -181,7 +181,7 @@ public class AreaLayerModel implements Serializable {
 		}
 
 		wallSet.clear();
-		for (Line2D wall : completeSet) {
+		for (Line wall : completeSet) {
 			if (mBoundingBox == null || mBoundingBox.hasIntersection(wall)) {
 				wallSet.add(wall);
 			}
@@ -223,7 +223,7 @@ public class AreaLayerModel implements Serializable {
 	public void computeCollisionSet(double x1, double y1, double x2, double y2,
 			Collection<Point2D> collisionSet) {
 
-		for (Line2D wall : workingSet) {
+		for (Line wall : workingSet) {
 
 			Polygon poly = new Polygon(new Point2D[] {
 					new Point2D(wall.getX1() + x1, wall.getY1() + y1),
